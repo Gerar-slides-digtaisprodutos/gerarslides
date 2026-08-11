@@ -4,7 +4,9 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement } = body;
+    
+    // 1. LENDO TODAS AS VARIÁVEIS VINDAS DO PAINEL (INCLUINDO EBOOK E GROK)
+    const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, isEbook, formato, useGrok } = body;
 
     const safetySettings = [
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -21,28 +23,9 @@ export async function POST(req: Request) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
     }
-// Adicione esta regra dentro do seu gerador de rotas na API
-const isEbook = body.isEbook || false;
-let regrasEbookObrigatorias = "";
 
-if (isEbook) {
-    const formatoLivro = body.formato || 'a4'; // a4, 14x21, 15x21
-    const tipoCapa = formatoLivro === 'a4' 
-        ? "Capa cheia preenchendo toda a primeira página digital." 
-        : "Folha de Rosto tradicional (Título elegante e Nome do Autor centralizados, sem imagem de fundo chamativa, ideal para livro impresso).";
-
-    regrasEbookObrigatorias = `
-    === REGRA DE OURO PARA EBOOKS PROFISSIONAIS (${formatoLivro.toUpperCase()}) ===
-    Você está criando um Ebook completo, estruturado para leitura e impressão.
-    - FORMATO DE PÁGINA: Use estilos CSS com largura e proporção para ${formatoLivro === 'a4' ? 'A4 (21cm x 29.7cm)' : formatoLivro + ' cm'}.
-    - PRIMEIRA PÁGINA: ${tipoCapa}
-    - SEGUNDA PÁGINA: Sumário / Índice completo com os títulos dos capítulos.
-    - CORPO DO TEXTO: Capítulos divididos com quebras de página CSS ('page-break-after: always' ou 'break-after-page').
-    - NUMERAÇÃO: Insira rodapés discretos com numeração de páginas e título do livro.
-    - DESIGN: Tipografia limpa, elegante, espaçamento de uma linha entre parágrafos, margens generosas para leitura confortável.
-    `;
-}
-    // 1. DIRETRIZ DE MÍDIA PROFISSIONAL PARA SLIDES
+    // 2. REGRAS CONDICIONAIS: SLIDES VS EBOOKS
+    let regrasObrigatorias = "";
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
 🚨 REGRA ABSOLUTA: É ESTRITAMENTE PROIBIDO usar links reais de imagens, loremflickr, ou tags genéricas.
@@ -50,25 +33,42 @@ Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
 Tamanhos Obrigatórios de Resolução:
-- 1280x720 (Paisagem/Landscape): Para fundos largos e imagens principais dos slides (16:9).
+- 1280x720 (Paisagem/Landscape): Para fundos largos.
 - 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe ou palestrantes.
 - 800x800 (Quadrado/Squarish): Para ícones, logos ou avatares pequenos.
 
-Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto (ex: business meeting, confident therapist).
+Keywords: Use 2 ou 3 palavras altamente precisas em inglês para definir o contexto.
 Exemplo: <img src="[UNSPLASH: 1280x720: modern office]" class="w-full h-auto object-cover rounded-xl shadow-lg" alt="Office" />
 `;
-    
-    let instrucaoDinamica = "";
-    if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES: Adicione classes tailwind de hover suave como hover:scale-105 transition-transform.";
-    else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES: Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e sombras fortes shadow-2xl.";
 
-    let regrasObrigatorias = "";
-    
     if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL DE SLIDES ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado no JSON. NÃO CORTE O CÓDIGO DA APRESENTAÇÃO.`;
+        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado no JSON. NÃO CORTE O CÓDIGO DA APRESENTAÇÃO.`;
     } else if (isElementRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO DE SLIDE ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais. Mantenha os IDs originais.`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais. Mantenha os IDs originais.`;
+    } else if (isEbook) {
+        // INJEÇÃO DAS REGRAS DO EBOOK
+        const formatoLivro = formato || 'a4'; 
+        const tipoCapa = formatoLivro === 'a4' 
+            ? "Capa cheia preenchendo toda a primeira página digital." 
+            : "Folha de Rosto tradicional (Título elegante e Nome do Autor centralizados, sem imagem de fundo chamativa, ideal para livro impresso).";
+
+        regrasObrigatorias = `
+=== REGRA DE OURO 1: ARQUITETURA DE EBOOK (${formatoLivro.toUpperCase()}) ===
+Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
+Você está criando um Ebook completo, estruturado para leitura e impressão.
+- FORMATO DE PÁGINA: Use estilos CSS com classes tailwind simulando páginas (ex: bg-white shadow-lg mx-auto mb-8 p-12 max-w-4xl min-h-[1122px]).
+- PRIMEIRA PÁGINA: ${tipoCapa}
+- SEGUNDA PÁGINA: Sumário / Índice completo com os títulos dos capítulos.
+- CORPO DO TEXTO: Capítulos bem divididos.
+- DESIGN: Tipografia limpa, elegante, espaçamento de uma linha entre parágrafos, margens generosas para leitura confortável.
+${regraImagens}
+`;
     } else {
+        // INJEÇÃO DAS REGRAS DOS SLIDES
+        let instrucaoDinamica = "";
+        if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES: Adicione classes tailwind de hover suave como hover:scale-105 transition-transform.";
+        else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES: Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e sombras fortes shadow-2xl.";
+
         regrasObrigatorias = `
 === REGRA DE OURO 1: ARQUITETURA DE SLIDES 16:9 ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
@@ -78,12 +78,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 - Cada slide DEVE obrigatoriamente ser uma tag <section> com as seguintes classes: "w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center shrink-0 relative bg-white".
 - Alterne a cor de fundo (ex: bg-slate-50, bg-slate-900) entre os slides para dar contraste.
 - Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
-
-=== REGRA DE OURO 2: CONTEÚDO DA APRESENTAÇÃO ===
-- Crie NO MÍNIMO 5 slides completos (Ex: Capa, O Problema, A Solução, Casos de Sucesso, Contato/CTA).
-- Use textos diretos, grandes e impactantes (text-3xl, text-5xl, text-7xl para títulos).
-- Textos não devem ser blocos densos, use bullet points e divisões visuais claras.
-
+- Crie NO MÍNIMO 5 slides completos. Use textos diretos, grandes e impactantes.
 ${regraImagens}
 ${instrucaoDinamica}
 `;
@@ -91,20 +86,23 @@ ${instrucaoDinamica}
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
-    let provedorTextoUsado = 'Google Gemini 2.5 (Design/Estrutura)';
+    let provedorTextoUsado = 'Google Gemini 3.6 Flash';
 
-    // Se for uma refatoração de um único elemento de texto, usamos o GROK (xAI) para Copywriting Persuasivo
-    const usarGrok = isElementRefinement && !body.isGeminiForced && !isSiteRefinement;
+    // 3. O SISTEMA DE ROTAÇÃO: GEMINI VS GROK
+    // Trava de segurança: Se for modificar a estrutura inteira do layout (isSiteRefinement), 
+    // forçamos o Gemini para não quebrar as tags HTML. Caso contrário, respeita a escolha do usuário.
+    const usarGrokFinal = (useGrok === true) && !isSiteRefinement && !isEbook; 
 
-    if (!usarGrok) {
+    // Nota: Como o Grok pode ter dificuldades com HTML muito longo e estruturado como um Ebook,
+    // garantimos que o Ebook seja sempre gerado pelo Gemini na raiz. O Grok pode refinar textos via Inspetor.
+
+    if (!usarGrokFinal) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
         const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash", systemInstruction: systemInstructionFinal, safetySettings });
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
     } else {
         provedorTextoUsado = 'Grok (xAI) - Copywriting';
-        
-        // Chamada direta para a API oficial do xAI (Grok)
         const grokResponse = await fetch("https://api.x.ai/v1/chat/completions", {
             method: "POST", 
             headers: { 
@@ -132,11 +130,9 @@ ${instrucaoDinamica}
 
     if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML. Tente refazer a requisição.");
 
-    // 3. MOTOR DE IMAGENS BLINDADO (Unsplash API)
+    // 4. MOTOR DE IMAGENS BLINDADO (Unsplash API)
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
-    
-    // ✨ A SOLUÇÃO DO SEU ERRO DO TYPESCRIPT ESTÁ AQUI
     let urlsToReplace: { fullMatch: string; dimensao: string; keywords: string }[] = [];
     
     while ((match = regexImgReq.exec(htmlCode)) !== null) {
@@ -148,9 +144,7 @@ ${instrucaoDinamica}
             let orient = 'landscape';
             if (item.dimensao === '800x1200') orient = 'portrait';
             if (item.dimensao === '800x800') orient = 'squarish';
-            
             const kwFormatada = encodeURIComponent(item.keywords.trim());
-            
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
 
             try {
@@ -181,7 +175,7 @@ ${instrucaoDinamica}
   }
 }
 
-// O NOVO EXTRATOR BLINDADO
+// EXTRATOR JSON BLINDADO
 function extrairHtmlDeJson(text: string): string {
   try {
       let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
