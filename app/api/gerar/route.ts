@@ -5,7 +5,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 1. LENDO TODAS AS VARIÁVEIS VINDAS DO PAINEL (INCLUINDO EBOOK E GROK)
     const { systemInstruction, promptParts, imageStyle, dinamica, isBlockRefinement, isElementRefinement, isSiteRefinement, isEbook, formato, useGrok } = body;
 
     const safetySettings = [
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
     let temImagem = false;
     let textoDoPrompt = "";
     
-    // Junta todo o texto enviado para análise
     for (const part of promptParts) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
@@ -28,7 +26,6 @@ export async function POST(req: Request) {
         ? "\n🚨 ATENÇÃO MÁXIMA: O usuário anexou uma imagem ou roteiro como base. VOCÊ DEVE EXTRAIR RIGOROSAMENTE AS INFORMAÇÕES, TEXTOS E CONTEXTO DESSA IMAGEM/ROTEIRO E GERAR TODO O CONTEÚDO DO PROJETO BASEADO EXCLUSIVAMENTE NELA. NÃO INVENTE ASSUNTOS ALEATÓRIOS." 
         : "";
 
-    // 2. REGRAS CONDICIONAIS: SLIDES VS EBOOKS
     let regrasObrigatorias = "";
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
@@ -37,11 +34,10 @@ Você DEVE utilizar a nossa tag de requisição para TODAS as imagens geradas.
 Sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 
 Tamanhos Obrigatórios de Resolução:
-- 1280x720 (Paisagem/Landscape): Para fundos largos.
-- 800x1200 (Retrato/Portrait): Para fotos de pessoas, equipe ou palestrantes.
-- 800x800 (Quadrado/Squarish): Para ícones, logos ou avatares pequenos.
-
-Exemplo de uso: <img src="[UNSPLASH: 800x1200: confident business professional]" alt="Cover" />
+- 1280x720 (Paisagem): Para fundos largos.
+- 800x1200 (Retrato): Para fotos de pessoas, capas ou palestrantes.
+- 800x800 (Quadrado): Para ícones, logos ou avatares pequenos.
+Exemplo: <img src="[UNSPLASH: 800x1200: confident business professional]" alt="Cover" />
 `;
 
     if (isSiteRefinement) {
@@ -49,11 +45,11 @@ Exemplo de uso: <img src="[UNSPLASH: 800x1200: confident business professional]"
     } else if (isElementRefinement) {
         regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento fornecido perfeitamente otimizado, dentro do JSON. Sem explicações adicionais. Mantenha os IDs originais.`;
     } else if (isEbook) {
-        // INJEÇÃO DAS REGRAS DO EBOOK COM O CSS PREMIUM SOLICITADO
         const formatoLivro = formato || 'a4'; 
-        let dimensoes = 'width: 210mm; height: 297mm; max-height: 297mm;'; 
-        if (formatoLivro === '14x21') dimensoes = 'width: 140mm; height: 210mm; max-height: 210mm;';
-        if (formatoLivro === '15x21') dimensoes = 'width: 150mm; height: 210mm; max-height: 210mm;';
+        
+        let widthStr = '210mm'; let heightStr = '297mm';
+        if (formatoLivro === '14x21') { widthStr = '140mm'; heightStr = '210mm'; }
+        if (formatoLivro === '15x21') { widthStr = '150mm'; heightStr = '210mm'; }
 
         const tipoCapa = formatoLivro === 'a4' 
             ? "Capa cheia preenchendo toda a primeira página digital." 
@@ -61,7 +57,11 @@ Exemplo de uso: <img src="[UNSPLASH: 800x1200: confident business professional]"
 
         const cssEbook = `<style>
 :root { --bg-color: #ffffff; --text-color: #1a1a1a; --primary-color: #080c16; --secondary-color: #1a7a4c; --accent-color: #1d5c96; --font-heading: 'Playfair Display', serif; --font-body: 'Lato', sans-serif; }
-.page-container { ${dimensoes} padding: 22mm 20mm 28mm 20mm; margin: 0 auto; background: var(--bg-color); box-sizing: border-box; position: relative; overflow: hidden; page-break-after: always; box-shadow: 0 10px 25px rgba(0,0,0,0.2); flex-shrink: 0; }
+
+/* Estrutura visual do Ebook na tela */
+#meu-ebook { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 30px; padding: 20px 0; }
+
+.page-container { width: ${widthStr}; height: ${heightStr}; max-height: ${heightStr}; padding: 22mm 20mm 28mm 20mm; background: var(--bg-color); box-sizing: border-box; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); flex-shrink: 0; }
 .page-container:not(.page-cover):not(.chapter-cover)::after { content: ""; position: absolute; top: 5mm; bottom: 5mm; left: 6mm; right: 6mm; border: 1px solid rgba(29, 92, 150, 0.5); pointer-events: none; z-index: 10; }
 .page-container:not(.page-cover):not(.chapter-cover)::before { content: ""; position: absolute; top: 6.5mm; bottom: 6.5mm; left: 7.5mm; right: 7.5mm; border: 0.5px solid rgba(8, 12, 22, 0.15); pointer-events: none; z-index: 10; }
 .page-header { position: absolute; top: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 10pt; color: var(--primary-color); border-bottom: 1px solid var(--secondary-color); padding-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; z-index: 20; }
@@ -83,7 +83,15 @@ blockquote.quote { font-size: 12pt; font-style: italic; font-family: var(--font-
 .chapter-cover { display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: var(--primary-color) !important; text-align: center; position: relative; overflow: hidden; }
 .chapter-number { font-size: 14pt; letter-spacing: 4px; text-transform: uppercase; color: var(--accent-color); margin-bottom: 20px; z-index: 1; font-weight: bold; }
 .chapter-title { font-size: 36pt; color: #ffffff; line-height: 1.2; max-width: 85%; z-index: 1; margin: 0 auto; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);}
-@media print { html, body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; display: block !important; width: 210mm !important; height: auto !important; } .page-container { margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always !important; } }
+
+/* O SEU CÓDIGO DE EXPORTAÇÃO EM PDF */
+@page { size: ${formatoLivro === 'a4' ? 'A4 portrait' : widthStr + ' ' + heightStr}; margin: 0; }
+@media print {
+    html, body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; display: block !important; width: ${widthStr} !important; height: auto !important; }
+    #meu-ebook { display: block !important; gap: 0 !important; padding: 0 !important; }
+    .page-container { width: ${widthStr} !important; height: ${heightStr} !important; box-sizing: border-box !important; margin: 0 !important; padding: 22mm 20mm 28mm 20mm !important; page-break-after: always !important; border: none !important; box-shadow: none !important; overflow: hidden !important; position: relative !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+}
 </style>`;
 
         regrasObrigatorias = `
@@ -91,23 +99,30 @@ blockquote.quote { font-size: 12pt; font-style: italic; font-family: var(--font-
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 Você está criando um Ebook completo, denso e literário, estruturado para leitura e impressão.
 
-1. OBRIGATÓRIO: Inicie o código HTML EXATAMENTE com este bloco <style> (NÃO ALTERE AS CLASSES):
+1. OBRIGATÓRIO: Inicie o código HTML EXATAMENTE com este bloco <style> (NÃO ALTERE AS CLASSES E INCLUA EXATAMENTE ESTE BLOCO):
 ${cssEbook}
 
-2. ESTRUTURA DAS PÁGINAS (USE DIVS COM A CLASSE "page-container"):
-- PÁGINA 1 (PRIMEIRA PÁGINA): ${tipoCapa} Se for Capa A4 use: <div class="page-container page-cover"><img src="[UNSPLASH: 800x1200: cover book]" alt="Capa"></div>
-- PÁGINA 2 (ÍNDICE): <div class="page-container page-index"><div class="page-header"><span>NOME DO LIVRO</span><span>Índice</span></div><h2 class="main-title toc-title-main">Índice</h2><div class="toc-list"><a href="#pg3" class="toc-item"><span class="toc-title">Capítulo 1</span><span class="toc-dots"></span><span class="toc-page">3</span></a></div><div class="page-footer"><span>Autor</span><span>2</span></div></div>
-- PÁGINA DE CAPÍTULO: <div class="page-container chapter-cover" id="pg3"><span class="chapter-number">Capítulo 1</span><h1 class="chapter-title">Título do Capítulo</h1></div>
-- PÁGINA DE TEXTO (MIOLO): <div class="page-container" id="pg4"><div class="page-header"><span>Capítulo 1</span><span>Nome do Livro</span></div><h3 class="sub-title">Subtítulo</h3><p>Seu texto longo, denso e valioso aqui...</p><blockquote class="quote">Citação de destaque aqui.</blockquote><div class="page-footer"><span>Autor</span><span>4</span></div></div>
+2. ESTRUTURA DAS PÁGINAS (Você deve envelopar TUDO dentro de <div id="meu-ebook">):
+<div id="meu-ebook">
+    <!-- PÁGINA 1: ${tipoCapa} -->
+    <div class="page-container page-cover"><img src="[UNSPLASH: 800x1200: cover book]" alt="Capa"></div>
+    
+    <!-- PÁGINA 2: ÍNDICE -->
+    <div class="page-container page-index"><div class="page-header"><span>NOME DO LIVRO</span><span>Índice</span></div><h2 class="main-title toc-title-main">Índice</h2><div class="toc-list"><a href="#pg3" class="toc-item"><span class="toc-title">Capítulo 1</span><span class="toc-dots"></span><span class="toc-page">3</span></a></div><div class="page-footer"><span>Autor</span><span>2</span></div></div>
+    
+    <!-- PÁGINA DE CAPÍTULO -->
+    <div class="page-container chapter-cover" id="pg3"><span class="chapter-number">Capítulo 1</span><h1 class="chapter-title">Título do Capítulo</h1></div>
+    
+    <!-- PÁGINA DE TEXTO (MIOLO) -->
+    <div class="page-container" id="pg4"><div class="page-header"><span>Capítulo 1</span><span>Nome do Livro</span></div><h3 class="sub-title">Subtítulo</h3><p>Seu texto longo, denso e valioso aqui...</p><blockquote class="quote">Citação de destaque aqui.</blockquote><div class="page-footer"><span>Autor</span><span>4</span></div></div>
+</div>
 
 3. O CONTEÚDO (MUITO IMPORTANTE):
-Transforme o tema fornecido em um texto DENSO, LONGO e PROFUNDO. Quebre os capítulos longos em múltiplas páginas (<div class="page-container">). Não crie páginas com apenas uma frase. Encha as páginas com conteúdo valioso.
-Crie NO MÍNIMO 6 a 8 páginas no total (Capa, Índice, Capa de Capítulo, Conteúdo, etc.).
+Transforme o tema fornecido em um texto DENSO, LONGO e PROFUNDO. Quebre os capítulos em múltiplas páginas (<div class="page-container">). Não crie páginas com apenas uma frase. Encha as páginas com conteúdo valioso! Crie NO MÍNIMO 6 a 8 páginas no total.
 ${instrucaoImagem}
 ${regraImagens}
 `;
     } else {
-        // INJEÇÃO DAS REGRAS DOS SLIDES
         let instrucaoDinamica = "";
         if (dinamica === 'suave') instrucaoDinamica = "- ANIMAÇÕES: Adicione classes tailwind de hover suave como hover:scale-105 transition-transform.";
         else if (dinamica === 'impacto') instrucaoDinamica = "- ANIMAÇÕES: Aplique Glassmorphism (bg-white/10 backdrop-blur-md) e sombras fortes shadow-2xl.";
@@ -132,12 +147,10 @@ ${instrucaoDinamica}
     let htmlCode = '';
     let provedorTextoUsado = 'Google Gemini 1.5 Pro';
 
-    // Trava de segurança: O Grok não é bom em estruturas HTML gigantes de livros ou arquiteturas complexas. 
     const usarGrokFinal = (useGrok === true) && !isSiteRefinement && !isEbook; 
 
     if (!usarGrokFinal) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        // Usa o modelo Pro para aguentar o fôlego longo do livro
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: systemInstructionFinal, safetySettings });
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.6 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
@@ -145,39 +158,26 @@ ${instrucaoDinamica}
         provedorTextoUsado = 'Grok (xAI) - Copywriting';
         const grokResponse = await fetch("https://api.x.ai/v1/chat/completions", {
             method: "POST", 
-            headers: { 
-                "Authorization": `Bearer ${process.env.GROK_API_KEY}`, 
-                "Content-Type": "application/json" 
-            },
+            headers: { "Authorization": `Bearer ${process.env.GROK_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 model: "grok-beta", 
-                messages: [
-                    { role: "system", content: systemInstructionFinal }, 
-                    { role: "user", content: textoDoPrompt }
-                ], 
+                messages: [{ role: "system", content: systemInstructionFinal }, { role: "user", content: textoDoPrompt }], 
                 response_format: { type: "json_object" }, 
                 temperature: 0.7
             })
         });
-        
-        if (!grokResponse.ok) {
-            throw new Error(`Erro na API do Grok: ${grokResponse.statusText}`);
-        }
-        
+        if (!grokResponse.ok) { throw new Error(`Erro na API do Grok: ${grokResponse.statusText}`); }
         const grokData = await grokResponse.json();
         htmlCode = extrairHtmlDeJson(grokData.choices[0].message.content);
     }
 
     if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML. Tente refazer a requisição.");
 
-    // 4. MOTOR DE IMAGENS BLINDADO (Unsplash API)
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
     let match;
     let urlsToReplace: { fullMatch: string; dimensao: string; keywords: string }[] = [];
     
-    while ((match = regexImgReq.exec(htmlCode)) !== null) {
-        urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] });
-    }
+    while ((match = regexImgReq.exec(htmlCode)) !== null) { urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); }
 
     if (urlsToReplace.length > 0 && process.env.UNSPLASH_ACCESS_KEY) {
         for (const item of urlsToReplace) {
@@ -186,7 +186,6 @@ ${instrucaoDinamica}
             if (item.dimensao === '800x800') orient = 'squarish';
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`; 
-
             try {
                 const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_ACCESS_KEY}`);
                 if (uRes.ok) {
@@ -195,9 +194,7 @@ ${instrucaoDinamica}
                         imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
                     }
                 }
-            } catch (e) {
-                console.log("Falha ao comunicar com Unsplash API.");
-            }
+            } catch (e) {}
             htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
@@ -215,7 +212,6 @@ ${instrucaoDinamica}
   }
 }
 
-// EXTRATOR JSON BLINDADO
 function extrairHtmlDeJson(text: string): string {
   try {
       let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
