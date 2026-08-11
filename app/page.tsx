@@ -12,7 +12,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     if (!document.getElementById('builder-core-styles')) {
         const style = document.createElement('style');
         style.id = 'builder-core-styles';
-        style.innerHTML = \`body.builder-editing * { cursor: crosshair !important; }\`;
+        style.innerHTML = 'body.builder-editing * { cursor: crosshair !important; }';
         document.head.appendChild(style);
     }
 
@@ -32,7 +32,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }
 
     function selectElement(targetEl) {
-        if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML') return;
+        if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML' || targetEl.id === 'presentation-wrapper') return;
 
         if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
         elSelecionado = targetEl;
@@ -229,11 +229,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = \`<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional realista" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="\${newId}">\`;
+                    newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 } else if(event.data.elementType === 'text') {
-                    newHtml = \`<p class="text-slate-600 mb-4 text-base leading-relaxed" id="\${newId}">Novo parágrafo de texto editável para o seu slide.</p>\`;
+                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu slide.</p>';
                 } else if(event.data.elementType === 'button') {
-                    newHtml = \`<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-1" id="\${newId}">Clique Aqui</a>\`;
+                    newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
                 }
                 
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
@@ -264,7 +264,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 targetEl.insertAdjacentElement('afterend', newBlock);
                 newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
-                let wrapper = document.querySelector('.snap-y') || document.body;
+                let wrapper = document.getElementById('presentation-wrapper') || document.body;
                 wrapper.appendChild(newBlock);
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }
@@ -284,8 +284,8 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             
             if (fontName !== 'sans-serif') {
-                fontLink.href = \`https://fonts.googleapis.com/css2?family=\${fontName.replace(/ /g, '+')}:wght@400;500;700;900&display=swap\`;
-                document.body.style.fontFamily = \`'\${fontName}', sans-serif\`;
+                fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
+                document.body.style.fontFamily = "'" + fontName + "', sans-serif";
             } else {
                 fontLink.href = '';
                 document.body.style.fontFamily = '';
@@ -298,7 +298,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let isImg = el.tagName === 'IMG';
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
-                let escP = p ? 'max-md\\\\:' : '';
+                let escP = p ? 'max-md\\:' : '';
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
@@ -306,7 +306,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + 'text-\\\\[\\\\d+px\\\\]\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
                     if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
                 }
                 
@@ -346,12 +346,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
                     }
 
-                    let rgbaStr = \`rgba(\${r}, \${g}, \${b}, \${cOpacity})\`;
+                    let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')';
                     el.style.setProperty('--tw-bg-opacity', '1');
 
                     if (cBgImage && cBgImage !== 'none') {
                         el.style.backgroundColor = 'transparent';
-                        el.style.backgroundImage = \`linear-gradient(\${rgbaStr}, \${rgbaStr}), url('\${cBgImage}')\`;
+                        el.style.backgroundImage = 'linear-gradient(' + rgbaStr + ', ' + rgbaStr + '), url(\\'' + cBgImage + '\\')';
                         el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
                     } else {
                         el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
@@ -364,11 +364,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
                     if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
                     if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
                 }
                 if(event.data.rounded !== undefined) {
@@ -385,18 +385,18 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.textAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(text-left|text-center|text-right|text-justify)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
                     if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
                 }
 
                 if(event.data.boxAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b', 'g'), '').trim();
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
                     if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
                     
                     if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.className = el.className.replace(new RegExp('\\\\b' + escP + '(justify-start|justify-center|justify-end)\\\\b', 'g'), '').trim();
+                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
                         if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
                         if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
                         if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
@@ -495,10 +495,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     }, true); 
 </script>`;
 
-// BLOCOS PRONTOS FORMATADOS PARA SLIDES (16:9 SNAP CENTER)
 const UI_BLOCKS = {
     faq: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0" id="slide-faq">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-faq">
         <div class="max-w-4xl w-full mx-auto">
             <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2>
             <p class="text-center text-slate-600 mb-12 text-xl">Tire suas dúvidas e acompanhe a apresentação com clareza.</p>
@@ -517,7 +516,7 @@ const UI_BLOCKS = {
     </section>`,
     
     garantia: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0" id="slide-garantia">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia">
         <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
@@ -533,7 +532,7 @@ const UI_BLOCKS = {
     </section>`,
 
     depoimentos: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0" id="slide-depoimentos">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos">
         <div class="max-w-6xl w-full mx-auto">
             <h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2>
             <p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p>
@@ -577,7 +576,7 @@ const UI_BLOCKS = {
     </section>`,
 
     precoDestaque: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0" id="slide-preco">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-preco">
         <div class="max-w-4xl mx-auto text-center w-full">
             <h2 class="text-4xl font-bold text-slate-900 mb-4">Proposta de Valor</h2>
             <p class="text-slate-600 mb-12 text-xl">A estruturação financeira do projeto discutido.</p>
@@ -600,7 +599,7 @@ const UI_BLOCKS = {
     </section>`,
 
     autorEsq: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0" id="slide-autor-esq">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq">
         <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
@@ -616,7 +615,7 @@ const UI_BLOCKS = {
     </section>`,
 
     autorDir: `
-    <section class="w-full h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0" id="slide-autor-dir">
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir">
         <div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
@@ -663,8 +662,8 @@ export default function Home() {
   const [productContent, setProductContent] = useState('');
 
   const purificarHTML = (rawHtml: string) => {
-      let clean = rawHtml.replace(/<script id="editor-magic-script">[\s\S]*?<\/script>/gi, '');
-      clean = clean.replace(/<style id="builder-core-styles">[\s\S]*?<\/style>/gi, '');
+      let clean = rawHtml.replace(/<script id="editor-magic-script">[\\s\\S]*?<\/script>/gi, '');
+      clean = clean.replace(/<style id="builder-core-styles">[\\s\\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
       clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
                    .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
@@ -674,6 +673,39 @@ export default function Home() {
                    .replace(/\s*style="\s*"/gi, ''); 
       clean = clean.replace(/ class="\s*"/gi, ''); 
       return clean;
+  };
+
+  const moldarApresentacaoHtml = (rawHtml: string) => {
+      let clean = purificarHTML(rawHtml);
+      
+      if (clean.toLowerCase().includes('<body')) {
+          return clean;
+      }
+      
+      return '<!DOCTYPE html>\n' +
+'<html lang="pt-BR" class="scroll-smooth">\n' +
+'<head>\n' +
+'    <meta charset="UTF-8">\n' +
+'    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'    <script src="https://cdn.tailwindcss.com"></script>\n' +
+'    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
+'    <title>' + seoData.title + '</title>\n' +
+'</head>\n' +
+'<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif;">\n' +
+'    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n' +
+        clean + '\n' +
+'    </div>\n' +
+'</body>\n' +
+'</html>';
+  };
+
+  const processarRespostaDOM = (data: any) => {
+      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+      const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
+      if (prevEl) prevEl.srcdoc = moldarApresentacaoHtml(data.html) + SCRIPT_PREVIEW; 
+      (window as any).showNotification("Apresentação Criada com Sucesso!", "success");
+      if (modoInspetor) toggleInspetor(); 
   };
 
   useEffect(() => {
@@ -688,7 +720,7 @@ export default function Home() {
         if (e.data.type === 'HTML_SYNC') {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
-                const htmlLimpo = purificarHTML(e.data.html);
+                const htmlLimpo = moldarApresentacaoHtml(e.data.html);
                 setHistoricoCodigo(prev => {
                     if (prev.length > 0 && prev[prev.length - 1] === htmlLimpo) return prev;
                     return [...prev, codEl.value]; 
@@ -699,7 +731,7 @@ export default function Home() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [fontFamily, seoData.title]);
 
   const toggleInspetor = () => {
       const newMode = !modoInspetor;
@@ -776,25 +808,25 @@ export default function Home() {
           let htmlAtual = codEl.value;
           
           if(htmlAtual.includes('<title>')) {
-              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, `<title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>');
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <title>${seoData.title}</title>`);
+              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>');
           }
 
           if(htmlAtual.includes('name="description"')) {
-              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, `<meta name="description" content="${seoData.description}">`);
+              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">');
           } else {
-              htmlAtual = htmlAtual.replace('<head>', `<head>\n    <meta name="description" content="${seoData.description}">`);
+              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">');
           }
 
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\s\S]*?<!-- END_HEAD -->/gi, '');
-          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\s\S]*?<!-- END_BODY -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
+          htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
 
           if(seoData.headScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</head>', `<!-- INJECT_HEAD -->\n${seoData.headScripts}\n<!-- END_HEAD -->\n</head>`);
+              htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>');
           }
           if(seoData.bodyScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</body>', `<!-- INJECT_BODY -->\n${seoData.bodyScripts}\n<!-- END_BODY -->\n</body>`);
+              htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>');
           }
 
           codEl.value = htmlAtual;
@@ -823,34 +855,7 @@ export default function Home() {
 
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
-    let htmlFinal = codigoExterno;
-    htmlFinal = htmlFinal.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    htmlFinal = htmlFinal.replace(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*>/gi, '');
-    htmlFinal = htmlFinal.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '<div class="p-8 my-4 bg-slate-100 border-2 border-dashed border-slate-400 text-center text-slate-500 font-bold rounded-lg flex flex-col items-center justify-center"><i class="fas fa-ban text-2xl mb-2 text-slate-400"></i><span>Iframe Externo Removido</span><span class="text-[10px] font-normal mt-1">Bloqueio de segurança.</span></div>');
-
-    if(!htmlFinal.toLowerCase().includes('<body')) {
-        htmlFinal = `<!DOCTYPE html>
-<html lang="pt-BR" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>${seoData.title}</title>
-</head>
-<body class="antialiased text-slate-800 bg-slate-900" style="font-family: '${fontFamily}', sans-serif;">
-    <div class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth">
-        ${htmlFinal}
-    </div>
-</body>
-</html>`;
-    } else {
-        if(htmlFinal.includes('</head>')) {
-            htmlFinal = htmlFinal.replace('</head>', '<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n</head>');
-        } else if(htmlFinal.includes('<body')) {
-            htmlFinal = htmlFinal.replace('<body', '<head><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></head><body class="bg-slate-900"');
-        }
-    }
+    let htmlFinal = moldarApresentacaoHtml(codigoExterno);
 
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -865,9 +870,8 @@ export default function Home() {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
-      const systemInstruction = `Atue como Especialista de Apresentações (Slides). Você receberá o HTML de UM elemento do slide. Aplique a seguinte modificação: "${comando}". 
-      REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Preserve obrigatoriamente o ID original id="${elementoSelecionado.id}".`;
-      const resData = await chamarMotorIA(systemInstruction, [{text: `CÓDIGO ORIGINAL:\n${elementoSelecionado.outerHTML}`}], true);
+      const systemInstruction = 'Atue como Especialista de Apresentações (Slides). Você receberá o HTML de UM elemento do slide. Aplique a seguinte modificação: "' + comando + '". REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Preserve obrigatoriamente o ID original id="' + elementoSelecionado.id + '".';
+      const resData = await chamarMotorIA(systemInstruction, [{text: 'CÓDIGO ORIGINAL:\n' + elementoSelecionado.outerHTML}], true);
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -888,7 +892,7 @@ export default function Home() {
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: `COMANDO DO USUÁRIO:\n${comando}\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n${currentHtml}` }], isSiteRefinement: true, isGeminiForced: true })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
         });
         const responseText = await response.text();
         let data;
@@ -927,10 +931,10 @@ export default function Home() {
 
   const getMegaPromptCores = () => {
     const cor = corSelecionada;
-    if (cor === 'personalizada') return `CORES DO SLIDE: Use ${(document.getElementById('corFundo') as HTMLInputElement)?.value} como fundo principal e ${(document.getElementById('corPrimaria') as HTMLInputElement)?.value} para detalhes.`;
+    if (cor === 'personalizada') return 'CORES DO SLIDE: Use ' + (document.getElementById('corFundo') as HTMLInputElement)?.value + ' como fundo principal e ' + (document.getElementById('corPrimaria') as HTMLInputElement)?.value + ' para detalhes.';
     if (cor === 'auto') return "CORES DO SLIDE: Copie fielmente as cores da imagem que o usuário anexou para criar os slides.";
     const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul Acadêmico', 'verde': 'Tons de Verde Corporativo', 'roxo': 'Tons de Roxo Criativo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa Suave', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
-    return `CORES DA APRESENTAÇÃO: A paleta de cores dos slides deve ser baseada em: ${mapaCores[cor] || 'Cores neutras'}.`;
+    return 'CORES DA APRESENTAÇÃO: A paleta de cores dos slides deve ser baseada em: ' + (mapaCores[cor] || 'Cores neutras') + '.';
   };
 
   const executarGeracaoSiteHibrida = async () => {
@@ -940,43 +944,27 @@ export default function Home() {
     let promptParts: any[] = [];
     let commandText = "Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). O espaçamento deve ter uma linha exata entre os títulos dos tópicos e os parágrafos (utilize mb-4). Utilize APENAS imagens fotográficas humanas realistas (exclua absolutamente todos os desenhos, gráficos animados e elementos sci-fi). Qualquer narrativa biográfica ou história pessoal deve ser consolidada estritamente no primeiro slide.\n\n";
     
-    if (content) { commandText += `CONTEÚDO DA APRESENTAÇÃO:\n"""\n${content}\n"""\n\n`; }
+    if (content) { commandText += 'CONTEÚDO DA APRESENTAÇÃO:\n"""\n' + content + '\n"""\n\n'; }
     if (uploadedImages.length > 0) {
-        commandText += `Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura visual e paleta de cores.`;
+        commandText += 'Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura visual e paleta de cores.';
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     
-    const basePrompt = `Como Especialista Sênior em Apresentações, crie a estrutura completa em HTML de uma apresentação impecável. Envolva todo o conteúdo em uma div principal com as classes 'h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-slate-900 scroll-smooth'. 
-    Dentro desta div, crie múltiplas tags <section> sequenciais (Slide 1, Slide 2, etc). 
-    Cada <section> representa um único slide e DEVE possuir estritamente as classes Tailwind: 'w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center shrink-0 relative'. 
-    A apresentação deve conter Slide de Capa, Problema, Solução, Benefícios, Casos de Sucesso e Chamada de Encerramento. Use tipografia super grande para leitura à distância em tela.`;
+    const basePrompt = 'Como Especialista Sênior em Apresentações, crie a estrutura completa em HTML de uma apresentação impecável. \n' +
+    '🚨 REGRA ESTRUTURAL OBRIGATÓRIA:\n' +
+    'Não me devolva as tags <html>, <head> ou <body>. Devolva APENAS as tags <section> e seu conteúdo interno.\n' +
+    "Cada <section> representa um único slide e DEVE possuir estritamente as classes Tailwind: 'w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center shrink-0 relative'. \n" +
+    'A apresentação deve conter Slide de Capa, Problema, Solução, Benefícios, Casos de Sucesso e Chamada de Encerramento. Use tipografia super grande para leitura à distância em tela.';
     
-    const instrucoesFinais = `${basePrompt} \n${getMegaPromptEstilo()} \n${getMegaPromptCores()}`;
+    const instrucoesFinais = basePrompt + '\n' + getMegaPromptEstilo() + '\n' + getMegaPromptCores();
     const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
     
     if (data && data.html) {
-        let hHtml = data.html;
-        if(fontFamily !== 'sans-serif') {
-            hHtml = hHtml.replace('</head>', `<link href="https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;500;700;900&display=swap" rel="stylesheet">\n</head>`);
-            // Se tiver body com outras fontes, injetamos a escolhida
-            hHtml = hHtml.replace(/<body[^>]*>/i, (match) => {
-                return match.replace(/style="[^"]*"/i, '') + ` style="font-family: '${fontFamily}', sans-serif;"`;
-            });
-        }
-        data.html = hHtml;
+        data.html = moldarApresentacaoHtml(data.html);
         processarRespostaDOM(data);
     }
   };
-
-  function processarRespostaDOM(data: any) {
-      const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-      const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
-      if (prevEl) prevEl.srcdoc = purificarHTML(data.html) + SCRIPT_PREVIEW; 
-      (window as any).showNotification(`Apresentação Criada com Sucesso!`, 'success');
-      if (modoInspetor) toggleInspetor(); 
-  }
 
   const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
       const file = e.target.files?.[0];
@@ -1005,19 +993,23 @@ export default function Home() {
       if(aiSearchType === 'minimalista') contextModifier = "minimalist, clean, simple, photography";
 
       try {
-          const jsonPrompt = `Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca para o Unsplash focada em ${contextModifier}. Texto: "${termoContexto}". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}`;
+          const jsonPrompt = 'Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca para o Unsplash focada em ' + contextModifier + '. Texto: "' + termoContexto + '". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}';
           const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
           if(iaData && iaData.html) {
-              try { const kwJson = JSON.parse(iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim()); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {}
+              try { 
+                  let cleanedIaHtml = iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim();
+                  const kwJson = JSON.parse(cleanedIaHtml); 
+                  if (kwJson.keyword) keywordFinal = kwJson.keyword; 
+              } catch(e) {}
           }
-          const res = await fetch(`/api/unsplash?q=${encodeURIComponent(keywordFinal)}&orientation=${orientation}`);
+          const res = await fetch('/api/unsplash?q=' + encodeURIComponent(keywordFinal) + '&orientation=' + orientation);
           const data = await res.json();
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = `https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=${w}&q=80`; 
+          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -1033,7 +1025,7 @@ export default function Home() {
   };
 
   const deletarSite = async (id: string, slug: string) => {
-    if (!confirm(`Deseja excluir esta apresentação para sempre?`)) return;
+    if (!confirm('Deseja excluir esta apresentação para sempre?')) return;
     await supabase.from('apresentacoes_salvas').delete().eq('id', id);
     setListaSites(listaSites.filter(site => site.id !== id));
     if (siteEditando?.id === id) setSiteEditando(null);
@@ -1093,11 +1085,11 @@ export default function Home() {
       const exist = document.getElementById('custom-toast'); if(exist) exist.remove();
       const div = document.createElement('div'); div.id = 'custom-toast';
       div.className = type === 'error' 
-      ? `fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-start gap-3 text-sm font-semibold max-w-lg w-full break-words` 
-      : `fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-center gap-3 text-sm font-semibold`;
+      ? 'fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-start gap-3 text-sm font-semibold max-w-lg w-full break-words' 
+      : 'fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-center gap-3 text-sm font-semibold';
       div.innerHTML = type === 'error' 
-      ? `<i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-lg shrink-0"></i> <span class="flex-1">${msg}</span>` 
-      : `<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>${msg}</span>`;
+      ? '<i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-lg shrink-0"></i> <span class="flex-1">' + msg + '</span>' 
+      : '<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>' + msg + '</span>';
       document.body.appendChild(div);
       setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 4000); }, 4000);
     };
@@ -1111,14 +1103,14 @@ export default function Home() {
       const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
       if (!txt) return;
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/html' }));
-      a.download = siteEditando ? `${siteEditando.slug}.html` : 'meus-slides.html'; a.click();
+      a.download = siteEditando ? siteEditando.slug + '.html' : 'meus-slides.html'; a.click();
     };
 
     (window as any).baixarPDF = () => {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
         if (iframe && iframe.contentWindow) {
             iframe.contentWindow.focus();
-            iframe.contentWindow.print(); // O print em A4 landscape simula perfeitamente o PDF de slides.
+            iframe.contentWindow.print();
         } else {
             (window as any).showNotification('Gere a apresentação primeiro.', 'error');
         }
@@ -1138,8 +1130,8 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
       await supabase.from('apresentacoes_salvas').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
-      navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
-      alert(`Parabéns! Sua Apresentação já tem um link público online.\nLink copiado:\n${window.location.origin}/${slug}`);
+      navigator.clipboard.writeText(window.location.origin + '/' + slug);
+      alert('Parabéns! Sua Apresentação já tem um link público online.\nLink copiado:\n' + window.location.origin + '/' + slug);
     };
   }, [siteEditando]); 
 
@@ -1244,8 +1236,8 @@ export default function Home() {
                   Slide<span className="text-indigo-600">Pro</span>
               </h1>
               
-              <button onClick={toggleInspetor} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                  <i className={`fas fa-crosshairs ${modoInspetor ? 'animate-pulse text-yellow-300' : ''}`}></i> {modoInspetor ? 'Editando...' : 'Editar Slide'}
+              <button onClick={toggleInspetor} className={'flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ' + (modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100')}>
+                  <i className={'fas fa-crosshairs ' + (modoInspetor ? 'animate-pulse text-yellow-300' : '')}></i> {modoInspetor ? 'Editando...' : 'Editar Slide'}
               </button>
           </div>
 
@@ -1340,9 +1332,9 @@ export default function Home() {
                                       <div className="panel-section border-t border-slate-100">
                                           <label className="input-label mb-2 text-[9px]">Alinhar Imagem</label>
                                           <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Esquerda"><i className="fas fa-align-left"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centro"><i className="fas fa-align-center"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Direita"><i className="fas fa-align-right"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Esquerda"><i className="fas fa-align-left"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Centro"><i className="fas fa-align-center"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Direita"><i className="fas fa-align-right"></i></button>
                                           </div>
                                       </div>
 
@@ -1397,17 +1389,17 @@ export default function Home() {
                                               <div>
                                                   <label className="input-label mb-2 text-[9px]">Alinhar Texto</label>
                                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-left"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-center"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.textAlign === 'text-right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`}><i className="fas fa-align-right"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-left"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-center"></i></button>
+                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-right"></i></button>
                                                   </div>
                                               </div>
                                               <div>
                                                   <label className="input-label mb-2 text-[9px]">Alinhar Bloco</label>
                                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Esquerda"><i className="fas fa-align-left"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Centralizar Caixa"><i className="fas fa-align-center"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={`flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ${elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200'}`} title="Mover para a Direita"><i className="fas fa-align-right"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Mover para a Esquerda"><i className="fas fa-align-left"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Centralizar Caixa"><i className="fas fa-align-center"></i></button>
+                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Mover para a Direita"><i className="fas fa-align-right"></i></button>
                                                   </div>
                                               </div>
                                           </div>
@@ -1438,7 +1430,7 @@ export default function Home() {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingX?.startsWith('px-[') && (
-                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', `px-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', 'px-[' + e.target.value + 'px]')} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                                   <div>
@@ -1459,7 +1451,7 @@ export default function Home() {
                                                           <option value="custom">Personalizado (Slider)</option>
                                                       </select>
                                                       {elementoSelecionado.paddingY?.startsWith('py-[') && (
-                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', `py-[${e.target.value}px]`)} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', 'py-[' + e.target.value + 'px]')} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                                                       )}
                                                   </div>
                                               </div>
@@ -1580,8 +1572,8 @@ export default function Home() {
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
                       <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-                          <button onClick={() => setAbaAtiva('gerar')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-magic mr-1.5"></i> Criar Slide</button>
-                          <button onClick={() => setAbaAtiva('blocos')} className={`whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ${abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}><i className="fas fa-cubes mr-1.5"></i> Modelos</button>
+                          <button onClick={() => setAbaAtiva('gerar')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-magic mr-1.5"></i> Criar Slide</button>
+                          <button onClick={() => setAbaAtiva('blocos')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-cubes mr-1.5"></i> Modelos</button>
                       </div>
 
                       {abaAtiva === 'blocos' ? (
@@ -1685,7 +1677,7 @@ export default function Home() {
                                                   {id: 'cinza', cor: 'bg-zinc-500', title: 'Cinza Analítico'},
                                                   {id: 'personalizada', cor: 'bg-white border-2 border-dashed border-slate-300', title: 'Escolher Manualmente'}
                                               ].map(c => (
-                                                  <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={`w-8 h-8 rounded-full shadow-sm transition-transform ${corSelecionada === c.id ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : 'hover:scale-105'} ${c.cor} flex items-center justify-center`} title={c.title}>
+                                                  <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={'w-8 h-8 rounded-full shadow-sm transition-transform ' + (corSelecionada === c.id ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : 'hover:scale-105') + ' ' + c.cor + ' flex items-center justify-center'} title={c.title}>
                                                       {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}
                                                       {c.id === 'personalizada' && <i className="fas fa-plus text-slate-400 text-[10px]"></i>}
                                                   </button>
@@ -1741,7 +1733,7 @@ export default function Home() {
                                           <div className="flex gap-3 mt-3 overflow-x-auto pb-2 custom-scrollbar">
                                               {uploadedImages.map((imgObj, idx) => (
                                                   <div key={idx} className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-200 shadow-sm group">
-                                                      <img src={`data:${imgObj.mimeType};base64,${imgObj.data}`} className="w-full h-full object-cover" />
+                                                      <img src={'data:' + imgObj.mimeType + ';base64,' + imgObj.data} className="w-full h-full object-cover" />
                                                       <button className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" onClick={(e) => { e.stopPropagation(); removerImagem(idx); }}><i className="fas fa-trash text-sm"></i></button>
                                                   </div>
                                               ))}
@@ -1760,6 +1752,133 @@ export default function Home() {
               )}
           </div>
       </div>
+
+      <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
+          
+          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
+              <div className="flex items-center gap-3 md:gap-5">
+                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition">Ver Slides</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
+                  </div>
+                  
+                  {/* SIMULADOR DE DISPOSITIVOS */}
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="16:9 Slide Monitor"><i className="fas fa-desktop text-xs"></i></button>
+                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Vertical Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
+                  </div>
+
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-file-import"></i> Importar HTML
+                  </button>
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-cog"></i> Ajustes de Slide
+                  </button>
+                  
+                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
+              </div>
+
+              <div className="flex items-center gap-3 md:gap-4">
+                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Minhas Apresentações</button>
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  
+                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
+                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
+                      <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
+                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
+                  </div>
+                  
+                  {siteEditando ? (
+                      <div className="flex gap-2">
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                      </div>
+                  ) : (
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
+                  )}
+              </div>
+          </div>
+          
+          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar">
+              {modoInspetor && (
+                  <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
+                      <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar!
+                  </div>
+              )}
+              
+              <div className={'mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white ' + (modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'border border-slate-300') + ' ' + (deviceView === 'mobile' ? 'w-[400px] h-[711px] shrink-0' : deviceView === 'tablet' ? 'w-[800px] h-full shrink-0' : 'aspect-video w-full max-w-[1280px]')}>
+                  {modoInspetor && (
+                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
+                          <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Slide</div>
+                      </div>
+                  )}
+                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin" title="Navegador do Site"></iframe>
+                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
+                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
+                          onBlur={(e) => {
+                              const newHtml = e.target.value;
+                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
+                              setHistoricoCodigo(prev => {
+                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
+                                  return [...prev, newHtml];
+                              });
+                          }}
+                      ></textarea>
+                  </div>
+              </div>
+          </div>
+      </div>
+      
+      {modalMeusSitesAberto && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Apresentações Salvas</h2>
+              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
+              {carregandoSites ? <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando apresentações...</p></div> : listaSites.length === 0 ? <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Você ainda não tem nenhuma apresentação.</p><p className="text-sm text-slate-400 mt-2">Gere seus primeiros slides e publique para aparecer aqui!</p></div> : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {sitesAtuais.map((site) => {
+                        const linkUrl = window.location.origin + '/' + site.slug;
+                        return (
+                          <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
+                            <h3 className="font-black text-base text-slate-800 mb-3 truncate group-hover:text-indigo-700 transition-colors">{site.titulo}</h3>
+                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
+                                <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
+                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
+                            </div>
+                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
+                              <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link Visualizador</a>
+                              <div className="flex gap-2">
+                                <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Abrir no Painel</button>
+                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition" title="Deletar Projeto"><i className="fas fa-trash"></i></button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalPaginas > 1 && (
+                      <div className="flex justify-center items-center gap-4 mt-8 pt-6">
+                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm"><i className="fas fa-chevron-left"></i> Voltar</button>
+                        <span className="text-xs font-black text-slate-500 tracking-widest uppercase bg-white px-4 py-2 rounded-lg border border-slate-200">Página {paginaAtual} de {totalPaginas}</span>
+                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm">Próxima <i className="fas fa-chevron-right ml-1"></i></button>
+                      </div>
+                    )}
+                  </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
