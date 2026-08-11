@@ -1398,8 +1398,8 @@ export default function Home() {
                                   <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span> Base do Projeto</h3>
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Texto / Tópicos / Roteiro</label>
-                                      <textarea value={productContent} maxLength={5000} onChange={(e) => setProductContent(e.target.value)} className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Cole os tópicos, roteiro..."></textarea>
-                                      <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
+                                      <textarea value={productContent} maxLength={10000} onChange={(e) => setProductContent(e.target.value)} className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Cole os tópicos, roteiro..."></textarea>
+                                      <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/10000</div>
                                   </div>
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Identidade Visual (Imagem Base)</label>
