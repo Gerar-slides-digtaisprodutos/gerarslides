@@ -4,173 +4,504 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// SCRIPT DO IFRAME (Totalmente formatado e sem compressão)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
-    let modoEdicao = false; let elSelecionado = null;
+    let modoEdicao = false;
+    let elSelecionado = null;
+
     if (!document.getElementById('builder-core-styles')) {
-        const style = document.createElement('style'); style.id = 'builder-core-styles';
-        style.innerHTML = 'body.builder-editing * { cursor: crosshair !important; }'; document.head.appendChild(style);
+        const style = document.createElement('style');
+        style.id = 'builder-core-styles';
+        style.innerHTML = 'body.builder-editing * { cursor: crosshair !important; }';
+        document.head.appendChild(style);
     }
+
     function rgbToHex(rgb) {
         if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
-        let res = rgb.match(/\\d+/g); if(!res || res.length < 3) return '';
+        let res = rgb.match(/\\d+/g);
+        if(!res || res.length < 3) return '';
         return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
     }
+
     function sendCleanHtml() {
-        let outlineAntigo = ''; if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
+        let outlineAntigo = '';
+        if(elSelecionado) { 
+            outlineAntigo = elSelecionado.style.outline; 
+            elSelecionado.style.outline = ''; 
+        }
         let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
-        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
+        if(elSelecionado) { 
+            elSelecionado.style.outline = outlineAntigo; 
+        }
         window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
     }
+
     function selectElement(targetEl) {
         if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML' || targetEl.id === 'presentation-wrapper') return;
-        if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
-        elSelecionado = targetEl; elSelecionado.style.outline = '3px solid #4f46e5'; elSelecionado.style.outlineOffset = '-3px';
+
+        if(elSelecionado) { 
+            elSelecionado.style.outline = ''; 
+            elSelecionado.style.outlineOffset = ''; 
+        }
+        
+        elSelecionado = targetEl;
+        elSelecionado.style.outline = '3px solid #4f46e5';
+        elSelecionado.style.outlineOffset = '-3px';
+
         if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
+
         let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
         let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS', 'PAGE-CONTAINER'].some(t => elSelecionado.tagName === t || elSelecionado.classList.contains(t.toLowerCase()));
         let bloqueiaTexto = isContainer && isNavOrSection;
-        let compStyle = window.getComputedStyle(elSelecionado); let isImg = elSelecionado.tagName === 'IMG';
+
+        let compStyle = window.getComputedStyle(elSelecionado);
+        let isImg = elSelecionado.tagName === 'IMG';
+        
         let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
         let bgImg = elSelecionado.dataset.rawBgImage;
-        if (bgImg === undefined) { let rawBg = elSelecionado.style.backgroundImage || ''; let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/); bgImg = match ? match[1] : ''; }
-        let aspect = elSelecionado.style.aspectRatio || ''; let objOpacity = 1;
-        if (isImg) { objOpacity = parseFloat(compStyle.opacity); } else { objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); }
+        
+        if (bgImg === undefined) {
+            let rawBg = elSelecionado.style.backgroundImage || '';
+            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+            bgImg = match ? match[1] : '';
+        }
+
+        let aspect = elSelecionado.style.aspectRatio || '';
+        let objOpacity = 1;
+        
+        if (isImg) { 
+            objOpacity = parseFloat(compStyle.opacity); 
+        } else { 
+            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
+        }
         if (isNaN(objOpacity)) objOpacity = 1;
-        let tAlign = ''; if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center'; else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right'; else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
-        let bAlign = ''; if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center'; else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right'; else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
+
+        let tAlign = '';
+        if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
+        else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right';
+        else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
+
+        let bAlign = '';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
+
         let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
         elSelecionado.classList.forEach(c => {
-            if(c.startsWith('px-') || c === 'w-full') paddingX = c; if(c === 'text-center' && elSelecionado.classList.contains('w-full')) paddingX += ' text-center';
-            if(c.startsWith('py-')) paddingY = c; if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' '; if(c === 'shadow') shadow += c + ' ';
-            if(c.startsWith('rounded')) rounded = c; if(c.startsWith('border-') && !isNaN(c.split('-')[1])) borderW = c; if(c === 'border') borderW = c;
+            if(c.startsWith('px-') || c === 'w-full') paddingX = c; 
+            if(c === 'text-center' && elSelecionado.classList.contains('w-full')) paddingX += ' text-center';
+            if(c.startsWith('py-')) paddingY = c;
+            if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' ';
+            if(c === 'shadow') shadow += c + ' ';
+            if(c.startsWith('rounded')) rounded = c;
+            if(c.startsWith('border-') && !isNaN(c.split('-')[1])) borderW = c;
+            if(c === 'border') borderW = c;
         });
+
         let href = elSelecionado.getAttribute('href') || '';
-        if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') { href = elSelecionado.parentElement.getAttribute('href') || ''; }
-        window.parent.postMessage({ type: 'ELEMENT_SELECTED', id: elSelecionado.id, tagName: elSelecionado.tagName.toLowerCase(), text: elSelecionado.innerText || '', src: elSelecionado.src || '', href: href, className: elSelecionado.className, bgColor: cColor, textColor: rgbToHex(compStyle.color), borderColor: rgbToHex(compStyle.borderColor), fontSize: parseInt(compStyle.fontSize) || 16, opacity: objOpacity, bgImage: bgImg, imgFormat: aspect, bloqueiaTexto: bloqueiaTexto, textAlign: tAlign, boxAlign: bAlign, paddingX: paddingX.trim(), paddingY: paddingY, shadow: shadow.trim(), rounded: rounded, borderW: borderW, outerHTML: elSelecionado.outerHTML }, '*');
+        if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') {
+            href = elSelecionado.parentElement.getAttribute('href') || '';
+        }
+
+        window.parent.postMessage({
+            type: 'ELEMENT_SELECTED',
+            id: elSelecionado.id,
+            tagName: elSelecionado.tagName.toLowerCase(),
+            text: elSelecionado.innerText || '',
+            src: elSelecionado.src || '',
+            href: href,
+            className: elSelecionado.className,
+            bgColor: cColor,
+            textColor: rgbToHex(compStyle.color),
+            borderColor: rgbToHex(compStyle.borderColor),
+            fontSize: parseInt(compStyle.fontSize) || 16,
+            opacity: objOpacity,
+            bgImage: bgImg,
+            imgFormat: aspect,
+            bloqueiaTexto: bloqueiaTexto,
+            textAlign: tAlign,
+            boxAlign: bAlign,
+            paddingX: paddingX.trim(),
+            paddingY: paddingY,
+            shadow: shadow.trim(),
+            rounded: rounded,
+            borderW: borderW,
+            outerHTML: elSelecionado.outerHTML
+        }, '*');
     }
 
     window.addEventListener('message', (event) => {
         if(event.data.type === 'TOGGLE_EDIT_MODE') {
             modoEdicao = event.data.value;
-            if(modoEdicao) { document.body.classList.add('builder-editing'); } 
-            else { 
+            if(modoEdicao) {
+                document.body.classList.add('builder-editing');
+            } else {
                 document.body.classList.remove('builder-editing');
-                if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; elSelecionado = null; }
-                document.querySelectorAll('[data-old-outline]').forEach(el => { el.style.outline = el.dataset.oldOutline || ''; el.style.outlineOffset = ''; delete el.dataset.oldOutline; });
-                document.querySelectorAll('*').forEach(el => { if (el.style.cursor === 'crosshair') el.style.cursor = ''; });
+                if(elSelecionado) { 
+                    elSelecionado.style.outline = ''; 
+                    elSelecionado.style.outlineOffset = ''; 
+                    elSelecionado = null; 
+                }
+                document.querySelectorAll('[data-old-outline]').forEach(el => {
+                    el.style.outline = el.dataset.oldOutline || '';
+                    el.style.outlineOffset = '';
+                    delete el.dataset.oldOutline;
+                });
+                document.querySelectorAll('*').forEach(el => {
+                    if (el.style.cursor === 'crosshair') el.style.cursor = '';
+                });
             }
         }
-        if (event.data.type === 'SELECT_PARENT') { let el = document.getElementById(event.data.id); if (el && el.parentElement && el.parentElement.tagName !== 'BODY') selectElement(el.parentElement); }
-        if (event.data.type === 'DELETE_ELEMENT') { let el = document.getElementById(event.data.id); if(el) { el.remove(); elSelecionado = null; sendCleanHtml(); } }
-        if (event.data.type === 'MOVE_UP') { let el = document.getElementById(event.data.id); if(el && el.previousElementSibling) { el.parentNode.insertBefore(el, el.previousElementSibling); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); sendCleanHtml(); } }
-        if (event.data.type === 'MOVE_DOWN') { let el = document.getElementById(event.data.id); if(el && el.nextElementSibling) { el.parentNode.insertBefore(el.nextElementSibling, el); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); sendCleanHtml(); } }
-        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') { let el = document.getElementById(event.data.id); if(el) { let sec = el.closest('section, header, footer, .page-container') || el; if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) { sec.parentNode.insertBefore(sec, sec.previousElementSibling); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) { sec.parentNode.insertBefore(sec.nextElementSibling, sec); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } sendCleanHtml(); } }
-        if (event.data.type === 'REVERSE_FLEX') { let el = document.getElementById(event.data.id); if(el) { let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div')); if(target) { if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) { target.classList.remove('md:flex-row-reverse', 'flex-row-reverse'); target.classList.add('md:flex-row'); } else { target.classList.remove('md:flex-row', 'flex-row'); target.classList.add('md:flex-row-reverse'); } sendCleanHtml(); } } }
-        if (event.data.type === 'DUPLICATE_ELEMENT') { let el = document.getElementById(event.data.id); if(el) { let clone = el.cloneNode(true); clone.id = 'node_' + Math.random().toString(36).substr(2,9); clone.querySelectorAll('[id]').forEach(child => { child.id = 'node_' + Math.random().toString(36).substr(2,9); }); clone.style.outline = ''; clone.style.outlineOffset = ''; el.parentNode.insertBefore(clone, el.nextSibling); sendCleanHtml(); } }
-        if (event.data.type === 'ADD_ELEMENT') {
+        
+        if (event.data.type === 'SELECT_PARENT') {
+            let el = document.getElementById(event.data.id);
+            if (el && el.parentElement && el.parentElement.tagName !== 'BODY') {
+                selectElement(el.parentElement);
+            }
+        }
+
+        if (event.data.type === 'DELETE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                let newHtml = ''; let newId = 'node_' + Math.random().toString(36).substr(2,9);
-                if(event.data.elementType === 'image') newHtml = '<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
-                else if(event.data.elementType === 'text') newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu projeto.</p>';
-                else if(event.data.elementType === 'button') newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
-                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV', 'PAGE-CONTAINER'].some(t => el.tagName === t || el.classList.contains(t.toLowerCase()));
-                if (isContainer) el.insertAdjacentHTML('beforeend', newHtml); else el.insertAdjacentHTML('afterend', newHtml);
+                el.remove();
+                elSelecionado = null;
                 sendCleanHtml();
             }
         }
+
+        if (event.data.type === 'MOVE_UP') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.previousElementSibling) {
+                el.parentNode.insertBefore(el, el.previousElementSibling);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'MOVE_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.nextElementSibling) {
+                el.parentNode.insertBefore(el.nextElementSibling, el);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let sec = el.closest('section, header, footer, .page-container') || el;
+                if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) {
+                    sec.parentNode.insertBefore(sec, sec.previousElementSibling);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) {
+                    sec.parentNode.insertBefore(sec.nextElementSibling, sec);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'REVERSE_FLEX') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
+                if(target) {
+                    if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) {
+                        target.classList.remove('md:flex-row-reverse', 'flex-row-reverse');
+                        target.classList.add('md:flex-row');
+                    } else {
+                        target.classList.remove('md:flex-row', 'flex-row');
+                        target.classList.add('md:flex-row-reverse');
+                    }
+                    sendCleanHtml();
+                }
+            }
+        }
+
+        if (event.data.type === 'DUPLICATE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let clone = el.cloneNode(true);
+                clone.id = 'node_' + Math.random().toString(36).substr(2,9);
+                clone.querySelectorAll('[id]').forEach(child => {
+                    child.id = 'node_' + Math.random().toString(36).substr(2,9);
+                });
+                clone.style.outline = '';
+                clone.style.outlineOffset = '';
+                
+                el.parentNode.insertBefore(clone, el.nextSibling);
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'ADD_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let newHtml = '';
+                let newId = 'node_' + Math.random().toString(36).substr(2,9);
+                
+                if(event.data.elementType === 'image') {
+                    newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
+                } else if(event.data.elementType === 'text') {
+                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu projeto.</p>';
+                } else if(event.data.elementType === 'button') {
+                    newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
+                }
+                
+                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV', 'PAGE-CONTAINER'].some(t => el.tagName === t || el.classList.contains(t.toLowerCase()));
+                
+                if (isContainer) {
+                    el.insertAdjacentHTML('beforeend', newHtml);
+                } else {
+                    el.insertAdjacentHTML('afterend', newHtml);
+                }
+                sendCleanHtml();
+            }
+        }
+
         if (event.data.type === 'INJECT_BLOCK') {
-            let el = document.getElementById(event.data.id); let targetEl = el ? (el.closest('section, header, footer, .page-container') || el) : document.body;
-            let tempDiv = document.createElement('div'); tempDiv.innerHTML = event.data.html; let newBlock = tempDiv.firstElementChild;
-            newBlock.querySelectorAll('*').forEach(child => { if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9); });
+            let el = document.getElementById(event.data.id);
+            let targetEl = el ? (el.closest('section, header, footer, .page-container') || el) : document.body;
+            
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = event.data.html;
+            let newBlock = tempDiv.firstElementChild;
+            
+            newBlock.querySelectorAll('*').forEach(child => {
+                if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
+            });
             newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
-            if (targetEl && targetEl !== document.body && targetEl.tagName !== 'HTML') { targetEl.insertAdjacentElement('afterend', newBlock); newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); } 
-            else { let wrapper = document.getElementById('presentation-wrapper') || document.body; wrapper.appendChild(newBlock); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+
+            if (targetEl && targetEl !== document.body && targetEl.tagName !== 'HTML') {
+                targetEl.insertAdjacentElement('afterend', newBlock);
+                newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                let wrapper = document.getElementById('presentation-wrapper') || document.body;
+                wrapper.appendChild(newBlock);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
             sendCleanHtml();
         }
+
         if (event.data.type === 'UPDATE_FONT') {
-            let fontName = event.data.font; let linkId = 'custom-google-font'; let fontLink = document.getElementById(linkId);
-            if (!fontLink) { fontLink = document.createElement('link'); fontLink.id = linkId; fontLink.rel = 'stylesheet'; document.head.appendChild(fontLink); }
-            if (fontName !== 'sans-serif') { fontLink.href = '[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap'; document.body.style.fontFamily = "'" + fontName + "', sans-serif"; } 
-            else { fontLink.href = ''; document.body.style.fontFamily = ''; }
+            let fontName = event.data.font;
+            let linkId = 'custom-google-font';
+            let fontLink = document.getElementById(linkId);
+            
+            if (!fontLink) {
+                fontLink = document.createElement('link');
+                fontLink.id = linkId;
+                fontLink.rel = 'stylesheet';
+                document.head.appendChild(fontLink);
+            }
+            
+            if (fontName !== 'sans-serif') {
+                fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
+                document.body.style.fontFamily = "'" + fontName + "', sans-serif";
+            } else {
+                fontLink.href = '';
+                document.body.style.fontFamily = '';
+            }
             sendCleanHtml();
         }
+
         if(event.data.type === 'UPDATE_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                let isImg = el.tagName === 'IMG'; let p = event.data.device === 'mobile' ? 'max-md:' : ''; let escP = p ? 'max-md\\:' : '';
+                let isImg = el.tagName === 'IMG';
+                let p = event.data.device === 'mobile' ? 'max-md:' : '';
+                let escP = p ? 'max-md\\:' : '';
+
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
-                if(event.data.fontSize !== undefined) { el.style.fontSize = ''; el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim(); if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]'); }
+                
+                if(event.data.fontSize !== undefined) {
+                    el.style.fontSize = ''; 
+                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
+                    if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
+                }
+                
                 if (event.data.href !== undefined) {
                     let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
-                    if (el.tagName === 'A') { if (event.data.href.trim() === '') el.removeAttribute('href'); else el.setAttribute('href', event.data.href); } 
-                    else if (parentIsA) { if (event.data.href.trim() === '') el.parentElement.removeAttribute('href'); else el.parentElement.setAttribute('href', event.data.href); } 
-                    else if (event.data.href.trim() !== '') { let a = document.createElement('a'); a.href = event.data.href; a.className = "inline-block cursor-pointer transition-all hover:opacity-90"; if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block'); el.parentNode.insertBefore(a, el); a.appendChild(el); }
+                    if (el.tagName === 'A') {
+                        if (event.data.href.trim() === '') el.removeAttribute('href');
+                        else el.setAttribute('href', event.data.href);
+                    } else if (parentIsA) {
+                        if (event.data.href.trim() === '') el.parentElement.removeAttribute('href');
+                        else el.parentElement.setAttribute('href', event.data.href);
+                    } else if (event.data.href.trim() !== '') {
+                        let a = document.createElement('a'); a.href = event.data.href; a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
+                        if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block');
+                        el.parentNode.insertBefore(a, el); a.appendChild(el);
+                    }
                 }
+
                 if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
                 if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
-                if (event.data.opacity !== undefined) { if (isImg) { el.style.opacity = event.data.opacity; } else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; } }
+                if (event.data.opacity !== undefined) {
+                    if (isImg) { el.style.opacity = event.data.opacity; } 
+                    else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
+                }
+
                 if (!isImg) {
-                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor); if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
-                    let cBgImage = el.dataset.rawBgImage; if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
+                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
+                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
+                    let cBgImage = el.dataset.rawBgImage;
+                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
                     let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
+
                     let r = 255, g = 255, b = 255;
-                    if (cBgColor.startsWith('#')) { let hex = cBgColor.replace('#', ''); if (hex.length === 3) hex = hex.split('').map(x => x+x).join(''); if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); } }
-                    let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')'; el.style.setProperty('--tw-bg-opacity', '1');
-                    if (cBgImage && cBgImage !== 'none') { el.style.backgroundColor = 'transparent'; el.style.backgroundImage = 'linear-gradient(' + rgbaStr + ', ' + rgbaStr + '), url(\\'' + cBgImage + '\\')'; el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat"; } 
-                    else { el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr; }
-                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md'); else el.classList.remove('backdrop-blur-md');
-                } else { if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor; }
-                if(event.data.paddingX !== undefined) { el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim(); if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); } }
-                if(event.data.paddingY !== undefined) { el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim(); if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY); }
-                if(event.data.rounded !== undefined) { el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim(); if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded); }
-                if(event.data.shadow !== undefined) { el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim(); if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); } }
-                if(event.data.borderW !== undefined) { el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim(); if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); } }
-                if(event.data.textAlign !== undefined) { el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim(); if(event.data.textAlign) el.classList.add(p + event.data.textAlign); }
+                    if (cBgColor.startsWith('#')) {
+                        let hex = cBgColor.replace('#', '');
+                        if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
+                        if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
+                    }
+
+                    let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')';
+                    el.style.setProperty('--tw-bg-opacity', '1');
+
+                    if (cBgImage && cBgImage !== 'none') {
+                        el.style.backgroundColor = 'transparent';
+                        el.style.backgroundImage = 'linear-gradient(' + rgbaStr + ', ' + rgbaStr + '), url(\\'' + cBgImage + '\\')';
+                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
+                    } else {
+                        el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
+                    }
+
+                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
+                    else el.classList.remove('backdrop-blur-md');
+                } else {
+                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
+                }
+
+                if(event.data.paddingX !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
+                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
+                }
+                if(event.data.paddingY !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
+                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
+                }
+                if(event.data.rounded !== undefined) {
+                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
+                    if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
+                }
+                if(event.data.shadow !== undefined) {
+                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
+                    if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
+                }
+                if(event.data.borderW !== undefined) {
+                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
+                    if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
+                }
+
+                if(event.data.textAlign !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
+                    if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
+                }
+
                 if(event.data.boxAlign !== undefined) {
                     el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
                     if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
-                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) { el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim(); if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center'); if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end'); if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start'); }
+                    
+                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
+                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
+                        if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
+                        if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
+                        if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
+                    }
                 }
+
                 if(event.data.animationClass !== undefined) {
                     const animClasses = ['animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:-translate-y-2', 'hover:-translate-y-1', 'hover:shadow-2xl', 'hover:shadow-indigo-500/50', 'hover:rotate-3', 'transition-transform', 'transition-all', 'transition-shadow', 'duration-300'];
                     el.classList.remove(...animClasses);
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
+
                 if(event.data.imgFormat !== undefined) {
-                    if (event.data.imgFormat === '') { el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto'); } 
-                    else { el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim(); el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full'); }
+                    if (event.data.imgFormat === '') {
+                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
+                    } else {
+                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
+                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
+                    }
                 }
+                
                 if(event.data.imgRounded !== undefined) {
                     const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
                     el.classList.remove(...allClassesToRemove);
                     if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
                 }
-                if(event.data.imgBorder !== undefined) { if (event.data.imgBorder) { el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl'); } else { el.style.borderWidth = '0px'; el.classList.remove('shadow-xl'); } }
+
+                if(event.data.imgBorder !== undefined) {
+                    if (event.data.imgBorder) { el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
+                    } else { el.style.borderWidth = '0px'; el.classList.remove('shadow-xl'); }
+                }
                 if(event.data.borderColor !== undefined) el.style.borderColor = event.data.borderColor;
+
                 sendCleanHtml();
             }
         }
-        if(event.data.type === 'REPLACE_ELEMENT_HTML') { let el = document.getElementById(event.data.id); if(el) { el.outerHTML = event.data.newHtml; sendCleanHtml(); } }
+        if(event.data.type === 'REPLACE_ELEMENT_HTML') {
+            let el = document.getElementById(event.data.id);
+            if(el) { el.outerHTML = event.data.newHtml; sendCleanHtml(); }
+        }
     });
 
-    document.addEventListener('mouseover', (e) => { if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return; e.target.dataset.oldOutline = e.target.style.outline; e.target.style.outline = '2px solid #0ea5e9'; e.target.style.outlineOffset = '-2px'; });
-    document.addEventListener('mouseout', (e) => { if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return; if(e.target !== elSelecionado) { e.target.style.outline = e.target.dataset.oldOutline || ''; e.target.style.outlineOffset = ''; } });
+    document.addEventListener('mouseover', (e) => {
+        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
+        e.target.dataset.oldOutline = e.target.style.outline;
+        e.target.style.outline = '2px solid #0ea5e9'; 
+        e.target.style.outlineOffset = '-2px';
+    });
+    
+    document.addEventListener('mouseout', (e) => {
+        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
+        if(e.target !== elSelecionado) { 
+            e.target.style.outline = e.target.dataset.oldOutline || ''; 
+            e.target.style.outlineOffset = '';
+        }
+    });
+
     window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+
     document.addEventListener('click', (e) => {
-        let link = e.target.closest('a'); let btn = e.target.closest('button'); let form = e.target.closest('form'); let summary = e.target.closest('summary');
+        let link = e.target.closest('a');
+        let btn = e.target.closest('button');
+        let form = e.target.closest('form');
+        let summary = e.target.closest('summary');
+
         if (form && !summary && !btn) { e.preventDefault(); }
-        if (modoEdicao) { if (summary) { setTimeout(() => selectElement(summary), 10); return; } e.preventDefault(); e.stopPropagation(); selectElement(e.target); return; }
+        
+        if (modoEdicao) {
+            if (summary) {
+                setTimeout(() => selectElement(summary), 10);
+                return; 
+            }
+            e.preventDefault(); 
+            e.stopPropagation();
+            selectElement(e.target);
+            return;
+        }
+
         if (link || btn) {
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
             if(link) {
                 let href = link.getAttribute('href') || '';
-                if(href.startsWith('#') && href.length > 1) { try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {} } 
-                else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') { let a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.click(); }
+                if(href.startsWith('#') && href.length > 1) {
+                    try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
+                } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
+                    let a = document.createElement('a');
+                    a.href = href;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.click();
+                }
             }
             return;
         }
@@ -178,12 +509,139 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 </script>`;
 
 const UI_BLOCKS = {
-    faq: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-faq"><div class="max-w-4xl w-full mx-auto"><h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2><p class="text-center text-slate-600 mb-12 text-xl">Tire suas dúvidas e acompanhe a apresentação com clareza.</p><div class="space-y-4 text-left"><details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100"><summary class="font-bold text-slate-800 text-lg outline-none">Como funcionará a dinâmica?</summary><p class="mt-4 text-slate-600 text-lg">Explicaremos cada tópico detalhadamente com abertura para perguntas no final do bloco.</p></details><details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100"><summary class="font-bold text-slate-800 text-lg outline-none">O material será disponibilizado?</summary><p class="mt-4 text-slate-600 text-lg">Sim, todos os participantes receberão os slides em PDF após a sessão.</p></details></div></div></section>`,
-    garantia: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div><img src="[https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80)" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" /></div><div class="flex-1 w-full text-left"><h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2><p class="text-slate-600 leading-relaxed mb-4 text-xl">Transparência, execução tática e resultados comprovados em cada etapa do projeto.</p><p class="text-slate-600 leading-relaxed mb-8 text-xl">Nesta apresentação, demonstraremos exatamente como a teoria se traduz em impacto financeiro direto para o seu negócio, sem letras miúdas.</p><button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-xl">Acompanhe os Dados</button></div></div></section>`,
-    depoimentos: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos"><div class="max-w-6xl w-full mx-auto"><h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2><p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p><div class="grid grid-cols-3 gap-8 text-left"><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Cliente</p><p class="text-slate-400 text-sm">Empresa / Cargo</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p><p class="text-slate-400 text-sm">Diretor Operacional</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Líder do Setor</p><p class="text-slate-400 text-sm">Gerência de Vendas</p></div></div></div></div></div></section>`,
-    precoDestaque: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-preco"><div class="max-w-4xl mx-auto text-center w-full"><h2 class="text-4xl font-bold text-slate-900 mb-4">Proposta de Valor</h2><p class="text-slate-600 mb-12 text-xl">A estruturação financeira do projeto discutido.</p><div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-12 max-w-2xl mx-auto"><div class="bg-indigo-100 text-indigo-700 font-black text-sm uppercase tracking-widest py-2 px-6 rounded-full inline-block mb-6">Investimento Único</div><h3 class="text-3xl font-black text-slate-900 mb-4">Implementação Completa</h3><p class="text-slate-500 mb-8 text-lg">Execução técnica e suporte consultivo incluso no projeto.</p><div class="text-6xl font-black text-slate-900 mb-8">R$ 5.000<span class="text-xl text-slate-500 font-normal">/escopo</span></div><ul class="text-left space-y-4 mb-10 text-slate-600 text-lg"><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Mapeamento e Diagnóstico</li><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Execução Estratégica em 4 Semanas</li><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Relatórios de Métricas Semanais</li></ul><button class="block w-full py-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-xl">Aprovar Proposta</button></div></div></section>`,
-    autorEsq: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div><img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`,
-    autorDir: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir"><div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div><img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`
+    faq: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-faq">
+        <div class="max-w-4xl w-full mx-auto">
+            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2>
+            <p class="text-center text-slate-600 mb-12 text-xl">Tire suas dúvidas e acompanhe a apresentação com clareza.</p>
+            
+            <div class="space-y-4 text-left">
+                <details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100">
+                    <summary class="font-bold text-slate-800 text-lg outline-none">Como funcionará a dinâmica?</summary>
+                    <p class="mt-4 text-slate-600 text-lg">Explicaremos cada tópico detalhadamente com abertura para perguntas no final do bloco.</p>
+                </details>
+                <details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100">
+                    <summary class="font-bold text-slate-800 text-lg outline-none">O material será disponibilizado?</summary>
+                    <p class="mt-4 text-slate-600 text-lg">Sim, todos os participantes receberão os slides em PDF após a sessão.</p>
+                </details>
+            </div>
+        </div>
+    </section>`,
+    
+    garantia: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia">
+        <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
+            <div class="flex-1 w-full relative">
+                <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
+                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" />
+            </div>
+            <div class="flex-1 w-full text-left">
+                <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2>
+                <p class="text-slate-600 leading-relaxed mb-4 text-xl">Transparência, execution tática e resultados comprovados em cada etapa do projeto.</p>
+                <p class="text-slate-600 leading-relaxed mb-8 text-xl">Nesta apresentação, demonstraremos exatamente como a teoria se traduz em impacto financeiro direto para o seu negócio, sem letras miúdas.</p>
+                <button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-xl">Acompanhe os Dados</button>
+            </div>
+        </div>
+    </section>`,
+
+    depoimentos: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos">
+        <div class="max-w-6xl w-full mx-auto">
+            <h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2>
+            <p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p>
+            
+            <div class="grid grid-cols-3 gap-8 text-left">
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação em tempo real."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-lg mb-1">Nome do Cliente</p>
+                            <p class="text-slate-400 text-sm">Empresa / Cargo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p>
+                            <p class="text-slate-400 text-sm">Diretor Operacional</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
+                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <div>
+                            <p class="text-white font-bold text-lg mb-1">Líder do Setor</p>
+                            <p class="text-slate-400 text-sm">Gerência de Vendas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>`,
+
+    precoDestaque: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-preco">
+        <div class="max-w-4xl mx-auto text-center w-full">
+            <h2 class="text-4xl font-bold text-slate-900 mb-4">Proposta de Valor</h2>
+            <p class="text-slate-600 mb-12 text-xl">A estruturação financeira do projeto discutido.</p>
+            
+            <div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-12 max-w-2xl mx-auto">
+                <div class="bg-indigo-100 text-indigo-700 font-black text-sm uppercase tracking-widest py-2 px-6 rounded-full inline-block mb-6">Investimento Único</div>
+                <h3 class="text-3xl font-black text-slate-900 mb-4">Implementação Completa</h3>
+                <p class="text-slate-500 mb-8 text-lg">Execução técnica e suporte consultivo incluso no projeto.</p>
+                <div class="text-6xl font-black text-slate-900 mb-8">R$ 5.000<span class="text-xl text-slate-500 font-normal">/escopo</span></div>
+                
+                <ul class="text-left space-y-4 mb-10 text-slate-600 text-lg">
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Mapeamento e Diagnóstico</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Execução Estratégica em 4 Semanas</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Relatórios de Métricas Semanais</li>
+                </ul>
+                
+                <button class="block w-full py-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-xl">Aprovar Proposta</button>
+            </div>
+        </div>
+    </section>`,
+
+    autorEsq: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq">
+        <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
+            <div class="flex-1 w-full relative">
+                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
+                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
+            </div>
+            <div class="flex-1 w-full text-left relative z-10">
+                <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
+                <h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2>
+                <p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p>
+                <p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p>
+            </div>
+        </div>
+    </section>`,
+
+    autorDir: `
+    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir">
+        <div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16">
+            <div class="flex-1 w-full relative">
+                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
+            </div>
+            <div class="flex-1 w-full text-left relative z-10">
+                <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
+                <h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2>
+                <p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p>
+                <p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p>
+            </div>
+        </div>
+    </section>`
 };
 
 export default function Home() {
@@ -210,7 +668,7 @@ export default function Home() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [fontFamily, setFontFamily] = useState('sans-serif');
   const [modalSEO, setModalSEO] = useState(false);
-  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Slides da apresentação', headScripts: '', bodyScripts: '' });
+  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Projeto Gerado com IA', headScripts: '', bodyScripts: '' });
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [productContent, setProductContent] = useState('');
 
@@ -233,14 +691,19 @@ export default function Home() {
           : 'h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative bg-slate-900';
       const bodyBg = isEbook ? '#e5e5e5' : '#0f172a';
 
-      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>\n<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">\n<link href="[https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap](https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap)" rel="stylesheet">\n<title>' + seoData.title + '</title>\n</head>\n<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n<div id="presentation-wrapper" class="' + wrapperClass + '">\n' + clean + '\n</div>\n</body>\n</html>';
+      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n<title>' + seoData.title + '</title>\n</head>\n<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n<div id="presentation-wrapper" class="' + wrapperClass + '">\n' + clean + '\n</div>\n</body>\n</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
-      if (prevEl) prevEl.srcdoc = moldarApresentacaoHtml(data.html, tipoProjeto) + SCRIPT_PREVIEW; 
+      if (codEl) { 
+          setHistoricoCodigo(prev => [...prev, codEl.value]); 
+          codEl.value = purificarHTML(data.html); 
+      }
+      if (prevEl) {
+          prevEl.srcdoc = moldarApresentacaoHtml(data.html, tipoProjeto) + SCRIPT_PREVIEW; 
+      }
       (window as any).showNotification("Projeto Criado com Sucesso!", "success");
       if (modoInspetor) toggleInspetor(); 
   };
@@ -248,6 +711,7 @@ export default function Home() {
   useEffect(() => {
     const verificarSessao = async () => { const { data: { session } } = await supabase.auth.getSession(); if (!session) window.location.href = '/login'; };
     verificarSessao();
+    
     const handleMessage = (e: MessageEvent) => {
         if (e.data.type === 'ELEMENT_SELECTED') setElementoSelecionado(e.data);
         if (e.data.type === 'HTML_SYNC') {
@@ -262,6 +726,65 @@ export default function Home() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [fontFamily, seoData.title, tipoProjeto]);
+
+  // AUTOAJUSTE DE FORMATO EBOOK USANDO DOMParser (Seguro para o CSS e Layout)
+  useEffect(() => {
+      if (tipoProjeto === 'ebook') {
+          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+          if (codEl && codEl.value && codEl.value.includes('page-container')) {
+              let htmlAtual = codEl.value;
+              
+              let widthStr = '210mm'; let heightStr = '297mm';
+              if (formatoEbook === '14x21') { widthStr = '140mm'; heightStr = '210mm'; }
+              if (formatoEbook === '15x21') { widthStr = '150mm'; heightStr = '210mm'; }
+
+              htmlAtual = htmlAtual.replace(/width:\s*(210mm|140mm|150mm)/gi, `width: ${widthStr}`);
+              htmlAtual = htmlAtual.replace(/height:\s*(297mm|210mm)/gi, `height: ${heightStr}`);
+              htmlAtual = htmlAtual.replace(/max-height:\s*(297mm|210mm)/gi, `max-height: ${heightStr}`);
+              htmlAtual = htmlAtual.replace(/size:\s*(A4 portrait|140mm 210mm|150mm 210mm)/gi, `size: ${formatoEbook === 'a4' ? 'A4 portrait' : widthStr + ' ' + heightStr}`);
+
+              if (!htmlAtual.includes('font-size: 12pt !important')) {
+                  htmlAtual = htmlAtual.replace(/<\/style>/i, `\np { font-size: 12pt !important; }\nimg { max-width: 100%; height: auto; border-radius: 8px; }\n</style>`);
+              }
+
+              const parser = new DOMParser();
+              const docDOM = parser.parseFromString(htmlAtual, 'text/html');
+              const paginas = docDOM.querySelectorAll('.page-container');
+              
+              if (paginas.length > 0) {
+                  const primeiraPagina = paginas[0] as HTMLElement;
+                  if (formatoEbook === 'a4') {
+                      primeiraPagina.className = 'page-container page-cover';
+                      if (!primeiraPagina.querySelector('img')) {
+                          primeiraPagina.innerHTML = `<img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Capa" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 100;" />`;
+                      }
+                  } else {
+                      primeiraPagina.className = 'page-container normal-page';
+                      primeiraPagina.innerHTML = `
+                      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; z-index: 20; position: relative;">
+                          <h1 style="font-family: var(--font-heading); font-size: 28pt; color: var(--primary-color); margin-bottom: 20px;">${seoData.title || 'Título do Ebook'}</h1>
+                          <div style="width: 50px; height: 2px; background-color: var(--secondary-color); margin: 20px auto;"></div>
+                          <p style="font-size: 14pt; color: var(--text-color); text-indent: 0; text-align: center; font-weight: bold; margin-top: 10px !important;">José Valderi Gadelha</p>
+                      </div>`;
+                  }
+              }
+
+              let finalHtml = '';
+              if (!htmlAtual.toLowerCase().includes('<body')) {
+                  finalHtml = docDOM.head.innerHTML + '\n' + docDOM.body.innerHTML;
+              } else {
+                  finalHtml = docDOM.documentElement.outerHTML;
+              }
+              
+              if (codEl.value !== finalHtml) {
+                  codEl.value = finalHtml;
+                  const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                  if (iframe) iframe.srcdoc = moldarApresentacaoHtml(finalHtml, 'ebook') + SCRIPT_PREVIEW;
+                  (window as any).showNotification("Layout ajustado para " + formatoEbook, "success");
+              }
+          }
+      }
+  }, [formatoEbook]);
 
   const toggleInspetor = () => {
       const newMode = !modoInspetor; setModoInspetor(newMode); setElementoSelecionado(null);
@@ -387,7 +910,7 @@ export default function Home() {
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de HTML. Modifique o projeto conforme solicitado preservando toda a arquitetura de layout.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML ATUAL ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de HTML. Modifique o projeto conforme solicitado preservando a arquitetura.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML ATUAL ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
         });
         const responseText = await response.text(); let data;
         try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
@@ -431,7 +954,9 @@ export default function Home() {
         tipoProjeto === 'ebook' ? 'Escritor Sênior: Crie o código de um Ebook impecável...' : 'Especialista Slides: Crie HTML de slides...', 
         promptParts, false, tipoProjeto === 'ebook', formatoEbook, textEngine === 'grok'
     );
-    if (data && data.html) { data.html = moldarApresentacaoHtml(data.html, tipoProjeto); processarRespostaDOM(data); }
+    if (data && data.html) { 
+        processarRespostaDOM(data); 
+    }
   };
 
   const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
@@ -464,7 +989,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); } 
           else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = '[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=)' + w + '&q=80'; 
+          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -535,7 +1060,7 @@ export default function Home() {
 
     (window as any).baixarPDF = () => {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-        if (iframe && iframe.contentWindow) { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (err) { (window as any).showNotification('Não foi possível abrir a janela de impressão automaticamente.', 'error'); } } 
+        if (iframe && iframe.contentWindow) { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (err) { (window as any).showNotification('Não foi possível abrir a janela de impressão.', 'error'); } } 
         else { (window as any).showNotification('Gere o projeto primeiro.', 'error'); }
     };
 
@@ -544,10 +1069,10 @@ export default function Home() {
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
         if (!doc || !doc.querySelector('section, .page-container')) { (window as any).showNotification('Gere o projeto primeiro.', 'error'); return; }
         (window as any).showNotification('Gerando PPTX... Aguarde alguns segundos.', 'success');
-        if (!(window as any).html2canvas) { const scriptCanvas = document.createElement('script'); scriptCanvas.src = "[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"; document.head.appendChild(scriptCanvas); }
+        if (!(window as any).html2canvas) { const scriptCanvas = document.createElement('script'); scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; document.head.appendChild(scriptCanvas); }
         if (!(window as any).PptxGenJS) {
-            const scriptZip = document.createElement('script'); scriptZip.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js)"; document.head.appendChild(scriptZip);
-            const scriptPptx = document.createElement('script'); scriptPptx.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js)"; document.head.appendChild(scriptPptx);
+            const scriptZip = document.createElement('script'); scriptZip.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"; document.head.appendChild(scriptZip);
+            const scriptPptx = document.createElement('script'); scriptPptx.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"; document.head.appendChild(scriptPptx);
         }
         setTimeout(async () => {
             try {
@@ -560,7 +1085,7 @@ export default function Home() {
                 }
                 const nomeArquivo = siteEditando ? siteEditando.slug : 'Meu_Projeto';
                 pptx.writeFile({ fileName: nomeArquivo + '.pptx' }); (window as any).showNotification('Download do PPTX concluído!', 'success');
-            } catch (err) { console.error(err); (window as any).showNotification('Erro na conversão. Tente exportar em PDF.', 'error'); }
+            } catch (err) { console.error(err); (window as any).showNotification('Erro na conversão.', 'error'); }
         }, 1500);
     };
 
@@ -586,7 +1111,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -602,6 +1127,7 @@ export default function Home() {
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: landscape; margin: 0; } }
       `}} />
 
+      {/* MODAIS (SEO E IMPORTAÇÃO) */}
       {modalImportarCodigo && (
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
