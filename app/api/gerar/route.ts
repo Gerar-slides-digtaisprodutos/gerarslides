@@ -145,13 +145,13 @@ ${instrucaoDinamica}
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
-    let provedorTextoUsado = 'Google Gemini 1.5 Pro';
+    let provedorTextoUsado = 'Google gemini-3.6-flash';
 
     const usarGrokFinal = (useGrok === true) && !isSiteRefinement && !isEbook; 
 
     if (!usarGrokFinal) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro", systemInstruction: systemInstructionFinal, safetySettings });
+        const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash", systemInstruction: systemInstructionFinal, safetySettings });
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.6 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
     } else {
