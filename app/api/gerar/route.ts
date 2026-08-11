@@ -21,7 +21,27 @@ export async function POST(req: Request) {
         if (part.inlineData) temImagem = true;
         if (part.text) textoDoPrompt += part.text + "\n";
     }
+// Adicione esta regra dentro do seu gerador de rotas na API
+const isEbook = body.isEbook || false;
+let regrasEbookObrigatorias = "";
 
+if (isEbook) {
+    const formatoLivro = body.formato || 'a4'; // a4, 14x21, 15x21
+    const tipoCapa = formatoLivro === 'a4' 
+        ? "Capa cheia preenchendo toda a primeira página digital." 
+        : "Folha de Rosto tradicional (Título elegante e Nome do Autor centralizados, sem imagem de fundo chamativa, ideal para livro impresso).";
+
+    regrasEbookObrigatorias = `
+    === REGRA DE OURO PARA EBOOKS PROFISSIONAIS (${formatoLivro.toUpperCase()}) ===
+    Você está criando um Ebook completo, estruturado para leitura e impressão.
+    - FORMATO DE PÁGINA: Use estilos CSS com largura e proporção para ${formatoLivro === 'a4' ? 'A4 (21cm x 29.7cm)' : formatoLivro + ' cm'}.
+    - PRIMEIRA PÁGINA: ${tipoCapa}
+    - SEGUNDA PÁGINA: Sumário / Índice completo com os títulos dos capítulos.
+    - CORPO DO TEXTO: Capítulos divididos com quebras de página CSS ('page-break-after: always' ou 'break-after-page').
+    - NUMERAÇÃO: Insira rodapés discretos com numeração de páginas e título do livro.
+    - DESIGN: Tipografia limpa, elegante, espaçamento de uma linha entre parágrafos, margens generosas para leitura confortável.
+    `;
+}
     // 1. DIRETRIZ DE MÍDIA PROFISSIONAL PARA SLIDES
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===

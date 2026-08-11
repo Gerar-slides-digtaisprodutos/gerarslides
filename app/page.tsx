@@ -637,7 +637,8 @@ export default function Home() {
   const [carregandoSites, setCarregandoSites] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const SITES_POR_PAGINA = 6; 
-
+  const [tipoProjeto, setTipoProjeto] = useState<'slides' | 'ebook'>('slides');
+  const [formatoEbook, setFormatoEbook] = useState<'a4' | '14x21' | '15x21'>('a4');
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
@@ -674,7 +675,39 @@ export default function Home() {
       clean = clean.replace(/ class="\s*"/gi, ''); 
       return clean;
   };
+{/* SELETOR DE MODO SLIDES VS EBOOK */}
+        <div className="mb-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+            <label className="input-label text-indigo-900">Tipo de Projeto</label>
+            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 mb-3">
+                <button 
+                    onClick={() => setTipoProjeto('slides')} 
+                    className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'slides' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500')}
+                >
+                    📊 Slides 16:9
+                </button>
+                <button 
+                    onClick={() => setTipoProjeto('ebook')} 
+                    className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'ebook' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500')}
+                >
+                    📖 Ebook / Livro
+                </button>
+            </div>
 
+            {tipoProjeto === 'ebook' && (
+                <div className="animate-[fadeIn_0.2s_ease]">
+                    <label className="input-label text-indigo-800">Formato do Ebook</label>
+                    <select 
+                        value={formatoEbook} 
+                        onChange={(e) => setFormatoEbook(e.target.value as any)} 
+                        className="input-standard font-bold text-slate-700 border-indigo-200"
+                    >
+                        <option value="a4">A4 Digital (Capa Cheia)</option>
+                        <option value="14x21">Livro 14x21 (Folha de Rosto KDP)</option>
+                        <option value="15x21">Livro 15x21 (Folha de Rosto Padrão)</option>
+                    </select>
+                </div>
+            )}
+        </div>
   const moldarApresentacaoHtml = (rawHtml: string) => {
       let clean = purificarHTML(rawHtml);
       
@@ -904,11 +937,24 @@ export default function Home() {
     } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
   };
 
-  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo o slide...' : 'A IA está estruturando a Apresentação...', processing: true });
+  const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, isEbook = false, formato = 'a4') => {
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo o slide...' : 'A IA está estruturando o projeto...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement }) });
+      const response = await fetch('/api/gerar', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ 
+              systemInstruction: systemInstructionText, 
+              promptParts, 
+              imageStyle: 'real', 
+              dinamica: dinamicaStyle, 
+              isElementRefinement, 
+              isGeminiForced: !isElementRefinement,
+              isEbook,
+              formato
+          }) 
+      });
       const responseText = await response.text();
       let data;
       try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a IA."); }
@@ -939,26 +985,32 @@ export default function Home() {
 
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
-    if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Anexe uma imagem OU digite o tema/conteúdo da apresentação.', 'error'); return; }
+    if (uploadedImages.length === 0 && !content) { 
+        (window as any).showNotification('Anexe uma imagem OU digite o tema/conteúdo do projeto.', 'error'); 
+        return; 
+    }
     
     let promptParts: any[] = [];
-    let commandText = "Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). O espaçamento deve ter uma linha exata entre os títulos dos tópicos e os parágrafos (utilize mb-4). Utilize APENAS imagens fotográficas humanas realistas (exclua absolutamente todos os desenhos, gráficos animados e elementos sci-fi). Qualquer narrativa biográfica ou história pessoal deve ser consolidada estritamente no primeiro slide.\n\n";
+    let commandText = tipoProjeto === 'ebook' 
+        ? 'Gere um Ebook completo e profissional no formato ' + formatoEbook + '. Inclua Sumário, Folha de Rosto (se formato de livro) ou Capa (se A4), capítulos numerados e conteúdo aprofundado com base no tema.\n\n'
+        : 'Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). Utilize imagens fotográficas humanas realistas.\n\n';
     
-    if (content) { commandText += 'CONTEÚDO DA APRESENTAÇÃO:\n"""\n' + content + '\n"""\n\n'; }
-    if (uploadedImages.length > 0) {
-        commandText += 'Use a IMAGEM ANEXADA como base rigorosa para extrair a estrutura visual e paleta de cores.';
+    if (content) { commandText += 'CONTEÚDO / TEMA:\n"""\n' + content + '\n"""\n\n'; }
+    if (uploadedImages.length > 0 && tipoProjeto === 'slides') {
+        commandText += 'Use a IMAGEM ANEXADA como base de identidade visual.';
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     
-    const basePrompt = 'Como Especialista Sênior em Apresentações, crie a estrutura completa em HTML de uma apresentação impecável. \n' +
-    '🚨 REGRA ESTRUTURAL OBRIGATÓRIA:\n' +
-    'Não me devolva as tags <html>, <head> ou <body>. Devolva APENAS as tags <section> e seu conteúdo interno.\n' +
-    "Cada <section> representa um único slide e DEVE possuir estritamente as classes Tailwind: 'w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center shrink-0 relative'. \n" +
-    'A apresentação deve conter Slide de Capa, Problema, Solução, Benefícios, Casos de Sucesso e Chamada de Encerramento. Use tipografia super grande para leitura à distância em tela.';
-    
-    const instrucoesFinais = basePrompt + '\n' + getMegaPromptEstilo() + '\n' + getMegaPromptCores();
-    const data = await chamarMotorIA(instrucoesFinais, promptParts, false);
+    const data = await chamarMotorIA(
+        tipoProjeto === 'ebook' 
+            ? 'Escritor Sênior: Crie o HTML de um Ebook impecável formato ' + formatoEbook + '. Use tags <div class="page">' 
+            : 'Especialista Slides: Crie HTML de slides 16:9 em tags <section>', 
+        promptParts, 
+        false, 
+        tipoProjeto === 'ebook', 
+        formatoEbook
+    );
     
     if (data && data.html) {
         data.html = moldarApresentacaoHtml(data.html);
