@@ -229,7 +229,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
                 
                 if(event.data.elementType === 'image') {
-                    newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
+                    newHtml = '<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 } else if(event.data.elementType === 'text') {
                     newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu projeto.</p>';
                 } else if(event.data.elementType === 'button') {
@@ -284,7 +284,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
             
             if (fontName !== 'sans-serif') {
-                fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
+                fontLink.href = '[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
                 document.body.style.fontFamily = "'" + fontName + "', sans-serif";
             } else {
                 fontLink.href = '';
@@ -520,7 +520,7 @@ const UI_BLOCKS = {
         <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
-                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" />
+                <img src="[https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80)" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" />
             </div>
             <div class="flex-1 w-full text-left">
                 <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2>
@@ -542,7 +542,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação em tempo real."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-lg mb-1">Nome do Cliente</p>
                             <p class="text-slate-400 text-sm">Empresa / Cargo</p>
@@ -553,7 +553,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p>
                             <p class="text-slate-400 text-sm">Diretor Operacional</p>
@@ -564,7 +564,7 @@ const UI_BLOCKS = {
                     <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p>
                     <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
+                        <img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
                         <div>
                             <p class="text-white font-bold text-lg mb-1">Líder do Setor</p>
                             <p class="text-slate-400 text-sm">Gerência de Vendas</p>
@@ -603,7 +603,7 @@ const UI_BLOCKS = {
         <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
@@ -619,7 +619,7 @@ const UI_BLOCKS = {
         <div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16">
             <div class="flex-1 w-full relative">
                 <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
+                <img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
             </div>
             <div class="flex-1 w-full text-left relative z-10">
                 <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
@@ -696,9 +696,9 @@ export default function Home() {
 '<head>\n' +
 '    <meta charset="UTF-8">\n' +
 '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'    <script src="https://cdn.tailwindcss.com"></script>\n' +
-'    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
-'    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n' +
+'    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>\n' +
+'    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">\n' +
+'    <link href="[https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap](https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap)" rel="stylesheet">\n' +
 '    <title>' + seoData.title + '</title>\n' +
 '</head>\n' +
 '<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n' +
@@ -780,7 +780,7 @@ export default function Home() {
       (window as any).showNotification("Novo elemento inserido!", "success");
   };
 
-  const moverElemento = (direcao: 'UP' | 'DOWN') => {
+ const moverElemento = (direcao: 'UP' | 'DOWN') => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_UP' : 'MOVE_DOWN', id: elementoSelecionado.id }, '*');
@@ -945,22 +945,6 @@ export default function Home() {
     } finally { setStatusApis({ texto: 'Aguardando Ação', processing: false }); }
   };
 
-  const getMegaPromptEstilo = () => {
-    const estilo = nichoEstilo;
-    if (estilo === 'premium') return "DIRETRIZ DE DESIGN: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita na tela.";
-    if (estilo === 'terapia') return "DIRETRIZ DE DESIGN: Crie uma aparência calma, leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
-    if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN: Foco total em Conversão. Use alto contraste, cores fortes e dados diretos ao ponto.";
-    return "DIRETRIZ DE DESIGN: Aparência limpa, moderna e altamente profissional.";
-  };
-
-  const getMegaPromptCores = () => {
-    const cor = corSelecionada;
-    if (cor === 'personalizada') return 'CORES DO DESIGN: Use ' + (document.getElementById('corFundo') as HTMLInputElement)?.value + ' como fundo principal e ' + (document.getElementById('corPrimaria') as HTMLInputElement)?.value + ' para detalhes.';
-    if (cor === 'auto') return "CORES DO DESIGN: Copie fielmente as cores da imagem que o usuário anexou.";
-    const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul Acadêmico', 'verde': 'Tons de Verde Corporativo', 'roxo': 'Tons de Roxo Criativo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa Suave', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
-    return 'CORES GERAIS: A paleta de cores deve ser baseada em: ' + (mapaCores[cor] || 'Cores neutras') + '.';
-  };
-
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
     if (uploadedImages.length === 0 && !content) { 
@@ -1042,7 +1026,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
+          const fallback = '[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=)' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -1164,6 +1148,7 @@ export default function Home() {
 
         (window as any).showNotification('Gerando PPTX... Aguarde alguns segundos.', 'success');
 
+        // Carrega as bibliotecas conversoras dinamicamente sem precisar instalar nada
         if (!(window as any).html2canvas) {
             const scriptCanvas = document.createElement('script');
             scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
@@ -1178,6 +1163,7 @@ export default function Home() {
             document.head.appendChild(scriptPptx);
         }
 
+        // Aguarda 1.5s para garantir que as bibliotecas carregaram
         setTimeout(async () => {
             try {
                 const sections = doc.querySelectorAll('section');
@@ -1186,14 +1172,18 @@ export default function Home() {
 
                 for (let i = 0; i < sections.length; i++) {
                     const slideEl = sections[i] as HTMLElement;
+                    
+                    // Esconde a linha de seleção (se houver algum elemento clicado)
                     const originalOutline = slideEl.style.outline;
                     slideEl.style.outline = 'none'; 
 
+                    // Tira a foto em alta resolução do HTML
                     const canvas = await (window as any).html2canvas(slideEl, { scale: 2, useCORS: true });
                     const imgData = canvas.toDataURL('image/jpeg', 0.8);
                     
                     slideEl.style.outline = originalOutline;
 
+                    // Adiciona ao arquivo do PowerPoint
                     const slide = pptx.addSlide();
                     slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
                 }
@@ -1208,20 +1198,6 @@ export default function Home() {
             }
         }, 1500);
     };
-
-    (window as any).handlePublicarSite = async () => {
-      const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!htmlContent) { (window as any).showNotification('Você precisa criar o projeto primeiro.', 'error'); return; }
-      let cleanHtml = purificarHTML(htmlContent);
-      if (siteEditando) { await supabase.from('apresentacoes_salvas').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Projeto atualizado com sucesso!', 'success'); return; }
-      const nome = prompt('Qual será o nome do seu Projeto? (Vai aparecer no Link Público):'); if (!nome) return; 
-      let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
-      await supabase.from('apresentacoes_salvas').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
-      navigator.clipboard.writeText(window.location.origin + '/' + slug);
-      alert('Parabéns! Seu Projeto já tem um link público online.\nLink copiado:\n' + window.location.origin + '/' + slug);
-    };
   }, [siteEditando, tipoProjeto]); 
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
@@ -1231,7 +1207,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
