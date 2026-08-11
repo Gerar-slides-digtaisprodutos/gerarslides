@@ -78,7 +78,7 @@ ${instrucaoDinamica}
 
     if (!usarGrok) {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash", systemInstruction: systemInstructionFinal, safetySettings });
+        const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash", systemInstruction: systemInstructionFinal, safetySettings });
         const result = await model.generateContent({ contents: [{ role: "user", parts: promptParts }], generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.4 } });
         htmlCode = extrairHtmlDeJson(result.response.text());
     } else {
