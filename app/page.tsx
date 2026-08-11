@@ -1109,8 +1109,12 @@ export default function Home() {
     (window as any).baixarPDF = () => {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
         if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                (window as any).showNotification('Não foi possível abrir a janela de impressão automaticamente.', 'error');
+            }
         } else {
             (window as any).showNotification('Gere a apresentação primeiro.', 'error');
         }
