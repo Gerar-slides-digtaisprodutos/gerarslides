@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME
+// SCRIPT DO IFRAME (Formatado e legível)
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -42,7 +42,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
 
         let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS'].includes(elSelecionado.tagName);
+        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS', 'PAGE-CONTAINER'].some(t => elSelecionado.tagName === t || elSelecionado.classList.contains(t.toLowerCase()));
         let bloqueiaTexto = isContainer && isNavOrSection;
 
         let compStyle = window.getComputedStyle(elSelecionado);
@@ -149,11 +149,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
         if (event.data.type === 'DELETE_ELEMENT') {
             let el = document.getElementById(event.data.id);
-            if(el) {
-                el.remove();
-                elSelecionado = null;
-                sendCleanHtml();
-            }
+            if(el) { el.remove(); elSelecionado = null; sendCleanHtml(); }
         }
 
         if (event.data.type === 'MOVE_UP') {
@@ -177,7 +173,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') {
             let el = document.getElementById(event.data.id);
             if(el) {
-                let sec = el.closest('section, header, footer') || el;
+                let sec = el.closest('section, header, footer, .page-container') || el;
                 if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) {
                     sec.parentNode.insertBefore(sec, sec.previousElementSibling);
                     sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -216,7 +212,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 });
                 clone.style.outline = '';
                 clone.style.outlineOffset = '';
-                
                 el.parentNode.insertBefore(clone, el.nextSibling);
                 sendCleanHtml();
             }
@@ -227,7 +222,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let newHtml = '';
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
-                
                 if(event.data.elementType === 'image') {
                     newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 } else if(event.data.elementType === 'text') {
@@ -235,9 +229,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 } else if(event.data.elementType === 'button') {
                     newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
                 }
-                
-                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
-                
+                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV', 'PAGE-CONTAINER'].some(t => el.tagName === t || el.classList.contains(t.toLowerCase()));
                 if (isContainer) {
                     el.insertAdjacentHTML('beforeend', newHtml);
                 } else {
@@ -249,12 +241,10 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
         if (event.data.type === 'INJECT_BLOCK') {
             let el = document.getElementById(event.data.id);
-            let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
-            
+            let targetEl = el ? (el.closest('section, header, footer, .page-container') || el) : document.body;
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = event.data.html;
             let newBlock = tempDiv.firstElementChild;
-            
             newBlock.querySelectorAll('*').forEach(child => {
                 if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
             });
@@ -275,14 +265,12 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let fontName = event.data.font;
             let linkId = 'custom-google-font';
             let fontLink = document.getElementById(linkId);
-            
             if (!fontLink) {
                 fontLink = document.createElement('link');
                 fontLink.id = linkId;
                 fontLink.rel = 'stylesheet';
                 document.head.appendChild(fontLink);
             }
-            
             if (fontName !== 'sans-serif') {
                 fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
                 document.body.style.fontFamily = "'" + fontName + "', sans-serif";
@@ -639,6 +627,7 @@ export default function Home() {
   const SITES_POR_PAGINA = 6; 
   const [tipoProjeto, setTipoProjeto] = useState<'slides' | 'ebook'>('slides');
   const [formatoEbook, setFormatoEbook] = useState<'a4' | '14x21' | '15x21'>('a4');
+  const [estiloCapitulo, setEstiloCapitulo] = useState<'exclusiva' | 'imagem_abaixo' | 'misto'>('exclusiva');
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
@@ -646,19 +635,15 @@ export default function Home() {
   const [textEngine, setTextEngine] = useState<'gemini' | 'grok'>('gemini');
   const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
   const [aiSearchType, setAiSearchType] = useState('realista');
-  
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
-
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
-
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [fontFamily, setFontFamily] = useState('sans-serif');
   const [modalSEO, setModalSEO] = useState(false);
-  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Slides da apresentação', headScripts: '', bodyScripts: '' });
-
+  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Projeto Gerado com IA', headScripts: '', bodyScripts: '' });
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [productContent, setProductContent] = useState('');
 
@@ -666,78 +651,119 @@ export default function Home() {
       let clean = rawHtml.replace(/<script id="editor-magic-script">[\\s\\S]*?<\/script>/gi, '');
       clean = clean.replace(/<style id="builder-core-styles">[\\s\\S]*?<\/style>/gi, '');
       clean = clean.replace(/\bbuilder-editing\b/gi, '');
-      clean = clean.replace(/cursor:\s*crosshair;?/gi, '')
-                   .replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '')
-                   .replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '')
-                   .replace(/outline-offset:\s*-[234]px;?/gi, '')
-                   .replace(/data-old-outline="[^"]*"/gi, '')
-                   .replace(/\s*style="\s*"/gi, ''); 
+      clean = clean.replace(/cursor:\s*crosshair;?/gi, '').replace(/outline:\s*2px solid rgb\(14, 165, 233\);?/gi, '').replace(/outline:\s*3px solid rgb\(79, 70, 229\);?/gi, '').replace(/outline-offset:\s*-[234]px;?/gi, '').replace(/data-old-outline="[^"]*"/gi, '').replace(/\s*style="\s*"/gi, ''); 
       clean = clean.replace(/ class="\s*"/gi, ''); 
       return clean;
   };
 
-  const moldarApresentacaoHtml = (rawHtml: string) => {
+  const moldarApresentacaoHtml = (rawHtml: string, tipo: string = tipoProjeto) => {
       let clean = purificarHTML(rawHtml);
+      if (clean.toLowerCase().includes('<body')) return clean;
       
-      if (clean.toLowerCase().includes('<body')) {
-          return clean;
-      }
-      
-      return '<!DOCTYPE html>\n' +
-'<html lang="pt-BR" class="scroll-smooth">\n' +
-'<head>\n' +
-'    <meta charset="UTF-8">\n' +
-'    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'    <script src="https://cdn.tailwindcss.com"></script>\n' +
-'    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
-'    <title>' + seoData.title + '</title>\n' +
-'</head>\n' +
-'<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif;">\n' +
-'    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n' +
-        clean + '\n' +
-'    </div>\n' +
-'</body>\n' +
-'</html>';
+      const isEbook = tipo === 'ebook';
+      const wrapperClass = isEbook 
+          ? 'h-screen w-full overflow-y-scroll bg-[#e5e5e5] flex flex-col items-center py-10 gap-10 scroll-smooth relative' 
+          : 'h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative bg-slate-900';
+      const bodyBg = isEbook ? '#e5e5e5' : '#0f172a';
+
+      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n<title>' + seoData.title + '</title>\n</head>\n<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n<div id="presentation-wrapper" class="' + wrapperClass + '">\n' + clean + '\n</div>\n</body>\n</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-      if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = purificarHTML(data.html); }
-      if (prevEl) prevEl.srcdoc = moldarApresentacaoHtml(data.html) + SCRIPT_PREVIEW; 
-      (window as any).showNotification("Apresentação Criada com Sucesso!", "success");
+      if (codEl) { 
+          setHistoricoCodigo(prev => [...prev, codEl.value]); 
+          codEl.value = purificarHTML(data.html); 
+      }
+      if (prevEl) {
+          prevEl.srcdoc = moldarApresentacaoHtml(data.html, tipoProjeto) + SCRIPT_PREVIEW; 
+      }
+      (window as any).showNotification("Projeto Criado com Sucesso!", "success");
       if (modoInspetor) toggleInspetor(); 
   };
 
   useEffect(() => {
-    const verificarSessao = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { window.location.href = '/login'; }
-    };
+    const verificarSessao = async () => { const { data: { session } } = await supabase.auth.getSession(); if (!session) window.location.href = '/login'; };
     verificarSessao();
-
+    
     const handleMessage = (e: MessageEvent) => {
         if (e.data.type === 'ELEMENT_SELECTED') setElementoSelecionado(e.data);
         if (e.data.type === 'HTML_SYNC') {
             const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
             if (codEl) {
-                const htmlLimpo = moldarApresentacaoHtml(e.data.html);
-                setHistoricoCodigo(prev => {
-                    if (prev.length > 0 && prev[prev.length - 1] === htmlLimpo) return prev;
-                    return [...prev, codEl.value]; 
-                });
+                const htmlLimpo = moldarApresentacaoHtml(e.data.html, tipoProjeto);
+                setHistoricoCodigo(prev => { if (prev.length > 0 && prev[prev.length - 1] === htmlLimpo) return prev; return [...prev, codEl.value]; });
                 codEl.value = htmlLimpo; 
             }
         }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [fontFamily, seoData.title]);
+  }, [fontFamily, seoData.title, tipoProjeto]);
+
+  // AUTOAJUSTE DE FORMATO EBOOK USANDO DOMParser (Seguro para o CSS e Layout)
+  useEffect(() => {
+      if (tipoProjeto === 'ebook') {
+          const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
+          if (codEl && codEl.value && codEl.value.includes('page-container')) {
+              let htmlAtual = codEl.value;
+              
+              let widthStr = '210mm'; let heightStr = '297mm';
+              if (formatoEbook === '14x21') { widthStr = '140mm'; heightStr = '210mm'; }
+              if (formatoEbook === '15x21') { widthStr = '150mm'; heightStr = '210mm'; }
+
+              htmlAtual = htmlAtual.replace(/width:\s*(210mm|140mm|150mm)/gi, `width: ${widthStr}`);
+              htmlAtual = htmlAtual.replace(/height:\s*(297mm|210mm)/gi, `height: ${heightStr}`);
+              htmlAtual = htmlAtual.replace(/max-height:\s*(297mm|210mm)/gi, `max-height: ${heightStr}`);
+              htmlAtual = htmlAtual.replace(/size:\s*(A4 portrait|140mm 210mm|150mm 210mm)/gi, `size: ${formatoEbook === 'a4' ? 'A4 portrait' : widthStr + ' ' + heightStr}`);
+
+              if (!htmlAtual.includes('font-size: 12pt !important')) {
+                  htmlAtual = htmlAtual.replace(/<\/style>/i, `\np { font-size: 12pt !important; }\nimg { max-width: 100%; height: auto; border-radius: 8px; }\n</style>`);
+              }
+
+              // Parseia o HTML de forma segura sem quebrar as tags <style> do cabeçalho
+              const parser = new DOMParser();
+              const docDOM = parser.parseFromString(htmlAtual, 'text/html');
+              const paginas = docDOM.querySelectorAll('.page-container');
+              
+              if (paginas.length > 0) {
+                  const primeiraPagina = paginas[0] as HTMLElement;
+                  if (formatoEbook === 'a4') {
+                      primeiraPagina.className = 'page-container page-cover';
+                      if (!primeiraPagina.querySelector('img')) {
+                          primeiraPagina.innerHTML = `<img src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Capa" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 100;" />`;
+                      }
+                  } else {
+                      primeiraPagina.className = 'page-container normal-page';
+                      primeiraPagina.innerHTML = `
+                      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; z-index: 20; position: relative;">
+                          <h1 style="font-family: var(--font-heading); font-size: 28pt; color: var(--primary-color); margin-bottom: 20px;">${seoData.title || 'Título do Ebook'}</h1>
+                          <div style="width: 50px; height: 2px; background-color: var(--secondary-color); margin: 20px auto;"></div>
+                          <p style="font-size: 14pt; color: var(--text-color); text-indent: 0; text-align: center; font-weight: bold; margin-top: 10px !important;">José Valderi Gadelha</p>
+                      </div>`;
+                  }
+              }
+
+              let finalHtml = '';
+              if (!htmlAtual.toLowerCase().includes('<body')) {
+                  finalHtml = docDOM.head.innerHTML + '\n' + docDOM.body.innerHTML;
+              } else {
+                  finalHtml = docDOM.documentElement.outerHTML;
+              }
+              
+              if (codEl.value !== finalHtml) {
+                  codEl.value = finalHtml;
+                  const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                  if (iframe) iframe.srcdoc = moldarApresentacaoHtml(finalHtml, 'ebook') + SCRIPT_PREVIEW;
+                  (window as any).showNotification("Layout ajustado para " + formatoEbook, "success");
+              }
+          }
+      }
+  }, [formatoEbook]);
 
   const toggleInspetor = () => {
-      const newMode = !modoInspetor;
-      setModoInspetor(newMode);
-      setElementoSelecionado(null);
+      const newMode = !modoInspetor; setModoInspetor(newMode); setElementoSelecionado(null);
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       if(iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'TOGGLE_EDIT_MODE', value: newMode }, '*');
   };
@@ -751,7 +777,7 @@ export default function Home() {
 
   const deletarElementoSelecionado = () => {
       if(!elementoSelecionado) return;
-      if(!confirm('Tem certeza que deseja excluir este elemento do slide?')) return;
+      if(!confirm('Tem certeza que deseja excluir este elemento?')) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'DELETE_ELEMENT', id: elementoSelecionado.id }, '*');
       setElementoSelecionado(null);
@@ -781,7 +807,7 @@ export default function Home() {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: direcao === 'UP' ? 'MOVE_SECTION_UP' : 'MOVE_SECTION_DOWN', id: elementoSelecionado.id }, '*');
-      (window as any).showNotification(direcao === 'UP' ? "Slide movido para cima!" : "Slide movido para baixo!", "success");
+      (window as any).showNotification(direcao === 'UP' ? "Item movido para cima!" : "Item movido para baixo!", "success");
   };
 
   const inverterLayoutBox = () => {
@@ -791,79 +817,48 @@ export default function Home() {
   };
 
   const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
-      const htmlBloco = UI_BLOCKS[tipo];
-      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+      const htmlBloco = UI_BLOCKS[tipo]; const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
       iframe.contentWindow?.postMessage({ type: 'INJECT_BLOCK', id: elementoSelecionado?.id, html: htmlBloco }, '*');
-      (window as any).showNotification("Slide inserido com sucesso!", "success");
+      (window as any).showNotification("Item inserido com sucesso!", "success");
   };
 
-  const aplicarFonte = (fonte: string) => {
-      setFontFamily(fonte);
-      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'UPDATE_FONT', font: fonte }, '*');
-  };
+  const aplicarFonte = (fonte: string) => { setFontFamily(fonte); const iframe = document.getElementById('previewFrame') as HTMLIFrameElement; iframe.contentWindow?.postMessage({ type: 'UPDATE_FONT', font: fonte }, '*'); };
 
   const salvarConfiguracoesSEO = () => {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       if(codEl) {
           let htmlAtual = codEl.value;
-          
-          if(htmlAtual.includes('<title>')) {
-              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>');
-          } else {
-              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>');
-          }
-
-          if(htmlAtual.includes('name="description"')) {
-              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">');
-          } else {
-              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">');
-          }
-
+          if(htmlAtual.includes('<title>')) htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>');
+          else htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>');
+          if(htmlAtual.includes('name="description"')) htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">');
+          else htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">');
           htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
           htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
-
-          if(seoData.headScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>');
-          }
-          if(seoData.bodyScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>');
-          }
-
+          if(seoData.headScripts.trim()) htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>');
+          if(seoData.bodyScripts.trim()) htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>');
           codEl.value = htmlAtual;
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           if (iframe) iframe.srcdoc = htmlAtual + SCRIPT_PREVIEW;
       }
-      setModalSEO(false);
-      (window as any).showNotification("Configurações salvas!", "success");
+      setModalSEO(false); (window as any).showNotification("Configurações salvas!", "success");
   };
 
   const desfazerCodigo = () => {
-    if (historicoCodigo.length === 0) {
-        (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
-        return;
-    }
-    const novoHistorico = [...historicoCodigo];
-    const estadoAnterior = novoHistorico.pop();
+    if (historicoCodigo.length === 0) { (window as any).showNotification("Nenhuma alteração para desfazer.", "error"); return; }
+    const novoHistorico = [...historicoCodigo]; const estadoAnterior = novoHistorico.pop();
     setHistoricoCodigo(novoHistorico);
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    if (codEl) codEl.value = estadoAnterior || '';
-    if (prevEl) prevEl.srcdoc = (estadoAnterior || '') + SCRIPT_PREVIEW; 
-    setElementoSelecionado(null);
-    (window as any).showNotification("Ação desfeita com sucesso.", "success");
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement; const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    if (codEl) codEl.value = estadoAnterior || ''; if (prevEl) prevEl.srcdoc = (estadoAnterior || '') + SCRIPT_PREVIEW; 
+    setElementoSelecionado(null); (window as any).showNotification("Ação desfeita com sucesso.", "success");
   };
 
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
-    let htmlFinal = moldarApresentacaoHtml(codigoExterno);
-
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    let htmlFinal = moldarApresentacaoHtml(codigoExterno, tipoProjeto);
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement; const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
     if (prevEl) prevEl.srcdoc = htmlFinal + SCRIPT_PREVIEW; 
-    setCodigoExterno(''); setModalImportarCodigo(false);
-    (window as any).showNotification("Apresentação importada!", "success");
+    setCodigoExterno(''); setModalImportarCodigo(false); (window as any).showNotification("Projeto importado com sucesso!", "success");
     if((window as any).mudarSeparador) (window as any).mudarSeparador('preview');
   };
 
@@ -871,61 +866,42 @@ export default function Home() {
       const promptInput = document.getElementById('ai_prompt_element') as HTMLInputElement;
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
-      const systemInstruction = 'Atue como Especialista de Apresentações (Slides). Você receberá o HTML de UM elemento do slide. Aplique a seguinte modificação: "' + comando + '". REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Preserve obrigatoriamente o ID original id="' + elementoSelecionado.id + '".';
+      const systemInstruction = 'Atue como Especialista de Copywriting. Você receberá o HTML de UM elemento. Aplique a seguinte modificação: "' + comando + '". REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Preserve obrigatoriamente o ID original id="' + elementoSelecionado.id + '".';
       const resData = await chamarMotorIA(systemInstruction, [{text: 'CÓDIGO ORIGINAL:\n' + elementoSelecionado.outerHTML}], true);
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           iframe.contentWindow?.postMessage({ type: 'REPLACE_ELEMENT_HTML', id: elementoSelecionado.id, newHtml: cleanHtml }, '*');
-          if(promptInput) promptInput.value = '';
-          (window as any).showNotification("Slide atualizado com IA.", "success");
+          if(promptInput) promptInput.value = ''; (window as any).showNotification("Item atualizado com IA.", "success");
       }
   };
 
   const executarRefinamentoGlobal = async () => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const currentHtml = codEl?.value || '';
-    if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter uma apresentação gerada para poder modificá-la estruturalmente.", "error"); return; }
-    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement;
-    const comando = promptInput?.value.trim();
-    if (!comando) { (window as any).showNotification("Descreva o que deseja alterar nos slides.", "error"); return; }
-    setStatusApis({ texto: 'Modificando Apresentação...', processing: true });
+    if (!currentHtml || currentHtml.length < 100) { (window as any).showNotification("Você precisa ter um projeto gerado para modificá-lo estruturalmente.", "error"); return; }
+    const promptInput = document.getElementById('refineGlobalContent') as HTMLTextAreaElement; const comando = promptInput?.value.trim();
+    if (!comando) { (window as any).showNotification("Descreva o que deseja alterar.", "error"); return; }
+    setStatusApis({ texto: 'Modificando Estrutura...', processing: true });
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de HTML. Modifique o projeto conforme solicitado preservando a arquitetura.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML ATUAL ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
         });
-        const responseText = await response.text();
-        let data;
+        const responseText = await response.text(); let data;
         try { data = JSON.parse(responseText); } catch (e) { throw new Error("Ocorreu um erro no servidor de IA."); }
         if (!data.success) throw new Error(data.error);
-        if (data.html && data.html.length > 50) {
-            processarRespostaDOM(data); promptInput.value = ''; (window as any).showNotification("Alteração Global aplicada com sucesso!", "success");
-        } else { throw new Error("A IA falhou ao processar a modificação global."); }
+        if (data.html && data.html.length > 50) { processarRespostaDOM(data); promptInput.value = ''; (window as any).showNotification("Alteração Global aplicada com sucesso!", "success"); } 
+        else { throw new Error("A IA falhou ao processar a modificação global."); }
     } catch (err: any) { (window as any).showNotification(err.message || "Erro na modificação.", "error"); } finally { setStatusApis({ texto: 'Aguardando Operação', processing: false }); }
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, isEbook = false, formato = 'a4', useGrok = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo o slide...' : 'A IA está estruturando o projeto...', processing: true });
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o projeto...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-      const response = await fetch('/api/gerar', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ 
-              systemInstruction: systemInstructionText, 
-              promptParts, 
-              imageStyle: 'real', 
-              dinamica: dinamicaStyle, 
-              isElementRefinement, 
-              isGeminiForced: !isElementRefinement,
-              isEbook,
-              formato,
-              useGrok
-          }) 
-      });
-      const responseText = await response.text();
-      let data;
+      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement, isEbook, formato, estiloCapitulo, useGrok }) });
+      const responseText = await response.text(); let data;
       try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a IA."); }
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da IA atingido. Aguarde 60 segundos." : data.error);
       return data;
@@ -936,79 +912,43 @@ export default function Home() {
     } finally { setStatusApis({ texto: 'Aguardando Ação', processing: false }); }
   };
 
-  const getMegaPromptEstilo = () => {
-    const estilo = nichoEstilo;
-    if (estilo === 'premium') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita na tela.";
-    if (estilo === 'terapia') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência calma, leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
-    if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN DO SLIDE: Foco total em Conversão e Vendas de Palco. Use alto contraste, cores fortes e dados diretos ao ponto.";
-    return "DIRETRIZ DE DESIGN DO SLIDE: Apresentação limpa, moderna e altamente profissional.";
-  };
-
-  const getMegaPromptCores = () => {
-    const cor = corSelecionada;
-    if (cor === 'personalizada') return 'CORES DO SLIDE: Use ' + (document.getElementById('corFundo') as HTMLInputElement)?.value + ' como fundo principal e ' + (document.getElementById('corPrimaria') as HTMLInputElement)?.value + ' para detalhes.';
-    if (cor === 'auto') return "CORES DO SLIDE: Copie fielmente as cores da imagem que o usuário anexou para criar os slides.";
-    const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul Acadêmico', 'verde': 'Tons de Verde Corporativo', 'roxo': 'Tons de Roxo Criativo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa Suave', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
-    return 'CORES DA APRESENTAÇÃO: A paleta de cores dos slides deve ser baseada em: ' + (mapaCores[cor] || 'Cores neutras') + '.';
-  };
-
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
-    if (uploadedImages.length === 0 && !content) { 
-        (window as any).showNotification('Anexe uma imagem OU digite o tema/conteúdo do projeto.', 'error'); 
-        return; 
-    }
-    
+    if (uploadedImages.length === 0 && !content) { (window as any).showNotification('Anexe uma imagem OU digite o tema/conteúdo do projeto.', 'error'); return; }
     let promptParts: any[] = [];
     let commandText = tipoProjeto === 'ebook' 
-        ? 'Gere um Ebook completo e profissional no formato ' + formatoEbook + '. Inclua Sumário, Folha de Rosto (se formato de livro) ou Capa (se A4), capítulos numerados e conteúdo aprofundado com base no tema.\n\n'
+        ? 'Gere um Ebook literário completo, com várias páginas e textos longos e aprofundados no formato ' + formatoEbook + '. \n\n'
         : 'Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). Utilize imagens fotográficas humanas realistas.\n\n';
-    
     if (content) { commandText += 'CONTEÚDO / TEMA:\n"""\n' + content + '\n"""\n\n'; }
-    if (uploadedImages.length > 0 && tipoProjeto === 'slides') {
-        commandText += 'Use a IMAGEM ANEXADA como base de identidade visual.';
+    if (uploadedImages.length > 0) {
+        commandText += '\nUSE ESTA IMAGEM ANEXADA COMO BASE ABSOLUTA DO CONTEÚDO E DA IDENTIDADE.';
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     
     const data = await chamarMotorIA(
-        tipoProjeto === 'ebook' 
-            ? 'Escritor Sênior: Crie o HTML de um Ebook impecável formato ' + formatoEbook + '. Use tags <div class="page">' 
-            : 'Especialista Slides: Crie HTML de slides 16:9 em tags <section>', 
-        promptParts, 
-        false, 
-        tipoProjeto === 'ebook', 
-        formatoEbook,
-        textEngine === 'grok'
+        tipoProjeto === 'ebook' ? 'Escritor Sênior: Crie o código de um Ebook impecável...' : 'Especialista Slides: Crie HTML de slides...', 
+        promptParts, false, tipoProjeto === 'ebook', formatoEbook, textEngine === 'grok'
     );
-    
-    if (data && data.html) {
-        data.html = moldarApresentacaoHtml(data.html);
-        processarRespostaDOM(data);
+    if (data && data.html) { 
+        processarRespostaDOM(data); 
     }
   };
 
   const handleUploadImgElem = (e: React.ChangeEvent<HTMLInputElement>, isBg = false) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev: any) => { atualizarElemento(isBg ? 'bgImage' : 'src', ev.target.result); };
-      reader.readAsDataURL(file);
-      e.target.value = ''; 
+      const file = e.target.files?.[0]; if (!file) return;
+      const reader = new FileReader(); reader.onload = (ev: any) => { atualizarElemento(isBg ? 'bgImage' : 'src', ev.target.result); }; reader.readAsDataURL(file); e.target.value = ''; 
   };
 
   const gerarNovaImagemIAAutomatica = async (isBackground = false, overrideFormat?: string) => {
       if(!elementoSelecionado) return;
       (window as any).showNotification("A IA está buscando a foto ideal na Unsplash...", "success");
-      
       let formatToUse = overrideFormat !== undefined ? overrideFormat : (elementoSelecionado.imgFormat || '');
       let orientation = 'landscape'; let w = 1280, h = 720;
       if (formatToUse === '3/4' || formatToUse === 'aspect-[3/4]') { orientation = 'portrait'; w = 800; h = 1200; }
       else if (formatToUse === '1/1' || formatToUse === 'aspect-square') { orientation = 'squarish'; w = 800; h = 800; }
-      
       let termoContexto = elementoSelecionado.text || productContent || "presentation business";
       if (termoContexto.length > 200) termoContexto = termoContexto.substring(0, 200);
-
       let contextModifier = "realistic photography, candid, natural";
       if(aiSearchType === 'cinematografica') contextModifier = "cinematic lighting, dramatic, high quality photography";
       if(aiSearchType === 'estudio') contextModifier = "studio lighting, professional portrait, editorial photography";
@@ -1019,17 +959,11 @@ export default function Home() {
           const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
-          if(iaData && iaData.html) {
-              try { 
-                  let cleanedIaHtml = iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim();
-                  const kwJson = JSON.parse(cleanedIaHtml); 
-                  if (kwJson.keyword) keywordFinal = kwJson.keyword; 
-              } catch(e) {}
-          }
+          if(iaData && iaData.html) { try { let cleanedIaHtml = iaData.html.replace(/```json/gi, '').replace(/```/g, '').trim(); const kwJson = JSON.parse(cleanedIaHtml); if (kwJson.keyword) keywordFinal = kwJson.keyword; } catch(e) {} }
           const res = await fetch('/api/unsplash?q=' + encodeURIComponent(keywordFinal) + '&orientation=' + orientation);
           const data = await res.json();
-          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); 
-          } else { throw new Error("API não retornou foto"); }
+          if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); } 
+          else { throw new Error("API não retornou foto"); }
       } catch(err) { 
           const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
@@ -1038,28 +972,23 @@ export default function Home() {
 
   const carregarMeusSites = async () => {
     setCarregandoSites(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    const { data: { session } } = await supabase.auth.getSession(); if (!session) return;
     const { data, error } = await supabase.from('apresentacoes_salvas').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
     if (!error) { setListaSites(data || []); setPaginaAtual(1); }
-    setCarregandoSites(false);
-    setModalMeusSitesAberto(true);
+    setCarregandoSites(false); setModalMeusSitesAberto(true);
   };
 
   const deletarSite = async (id: string, slug: string) => {
-    if (!confirm('Deseja excluir esta apresentação para sempre?')) return;
+    if (!confirm('Deseja excluir este projeto para sempre?')) return;
     await supabase.from('apresentacoes_salvas').delete().eq('id', id);
     setListaSites(listaSites.filter(site => site.id !== id));
     if (siteEditando?.id === id) setSiteEditando(null);
   };
 
   const editarSite = (site: any) => {
-    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
-    const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    if (codEl) codEl.value = site.html_content;
-    if (prevEl) prevEl.srcdoc = site.html_content + SCRIPT_PREVIEW; 
-    setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
-    setModalMeusSitesAberto(false);
+    const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement; const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
+    if (codEl) codEl.value = site.html_content; if (prevEl) prevEl.srcdoc = site.html_content + SCRIPT_PREVIEW; 
+    setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo }); setModalMeusSitesAberto(false);
   };
 
   const processFile = (file: File) => {
@@ -1068,11 +997,9 @@ export default function Home() {
     reader.onload = (e: any) => {
         const img = new Image();
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let w = img.width; let h = img.height; const maxDim = 1400; 
+            const canvas = document.createElement('canvas'); let w = img.width; let h = img.height; const maxDim = 1400; 
             if (w > maxDim || h > maxDim) { if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; } else { w = Math.round((w * maxDim) / h); h = maxDim; } }
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
+            canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d');
             if (ctx) { ctx.drawImage(img, 0, 0, w, h); const dataUrl = canvas.toDataURL('image/jpeg', 0.8); const base64Data = dataUrl.split(',')[1]; setUploadedImages(prev => [...prev, { mimeType: 'image/jpeg', data: base64Data }]); }
         };
         img.src = e.target.result;
@@ -1080,25 +1007,17 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
-  const handleImageUploadInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) { Array.from(e.target.files).forEach(file => processFile(file as File)); e.target.value = ''; }
-  };
-
+  const handleImageUploadInput = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) { Array.from(e.target.files).forEach(file => processFile(file as File)); e.target.value = ''; } };
   const removerImagem = (index: number) => { setUploadedImages(prev => prev.filter((_, i) => i !== index)); };
 
   useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items; if (!items) return;
-      for (let i = 0; i < items.length; i++) { if (items[i].kind === 'file' && items[i].type.startsWith('image/')) processFile(items[i].getAsFile()!); }
-    };
-    document.body.addEventListener('paste', handlePaste);
-    return () => document.body.removeEventListener('paste', handlePaste);
+    const handlePaste = (e: ClipboardEvent) => { const items = e.clipboardData?.items; if (!items) return; for (let i = 0; i < items.length; i++) { if (items[i].kind === 'file' && items[i].type.startsWith('image/')) processFile(items[i].getAsFile()!); } };
+    document.body.addEventListener('paste', handlePaste); return () => document.body.removeEventListener('paste', handlePaste);
   }, []);
 
   useEffect(() => {
     (window as any).mudarSeparador = (aba: string) => {
-      document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview');
-      document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
+      document.getElementById('previewFrame')!.classList.toggle('active', aba === 'preview'); document.getElementById('codigoContainer')!.classList.toggle('active', aba === 'code');
       document.getElementById('tabPreview')!.className = aba === 'preview' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
       document.getElementById('tabCode')!.className = aba === 'code' ? "px-5 py-2 rounded-md font-bold text-[11px] bg-slate-800 text-white shadow-sm transition" : "px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition";
     };
@@ -1106,60 +1025,60 @@ export default function Home() {
     (window as any).showNotification = (msg: string, type: string) => {
       const exist = document.getElementById('custom-toast'); if(exist) exist.remove();
       const div = document.createElement('div'); div.id = 'custom-toast';
-      div.className = type === 'error' 
-      ? 'fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-start gap-3 text-sm font-semibold max-w-lg w-full break-words' 
-      : 'fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-center gap-3 text-sm font-semibold';
-      div.innerHTML = type === 'error' 
-      ? '<i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-lg shrink-0"></i> <span class="flex-1">' + msg + '</span>' 
-      : '<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>' + msg + '</span>';
-      document.body.appendChild(div);
-      setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 4000); }, 4000);
+      div.className = type === 'error' ? 'fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-start gap-3 text-sm font-semibold max-w-lg w-full break-words' : 'fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-xl z-[9999] flex items-center gap-3 text-sm font-semibold';
+      div.innerHTML = type === 'error' ? '<i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-lg shrink-0"></i> <span class="flex-1">' + msg + '</span>' : '<i class="fas fa-check-circle text-emerald-400 text-lg shrink-0"></i> <span>' + msg + '</span>';
+      document.body.appendChild(div); setTimeout(() => { div.style.opacity = '0'; div.style.transition = 'opacity 0.4s'; setTimeout(() => div.remove(), 4000); }, 4000);
     };
 
-    (window as any).copiarCodigo = () => {
-      const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('O Código HTML copiado para área de transferência.', 'success');
-    };
+    (window as any).copiarCodigo = () => { const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value; if (!txt) return; navigator.clipboard.writeText(txt); (window as any).showNotification('O Código HTML copiado para área de transferência.', 'success'); };
 
-    (window as any).baixarHtmlGerado = () => {
-      const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!txt) return;
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/html' }));
-      a.download = siteEditando ? siteEditando.slug + '.html' : 'meus-slides.html'; a.click();
-    };
+    (window as any).baixarHtmlGerado = () => { const txt = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value; if (!txt) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/html' })); a.download = siteEditando ? siteEditando.slug + '.html' : 'meu-projeto.html'; a.click(); };
 
     (window as any).baixarPDF = () => {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-        if (iframe && iframe.contentWindow) {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch (err) {
-                (window as any).showNotification('Não foi possível abrir a janela de impressão automaticamente.', 'error');
-            }
-        } else {
-            (window as any).showNotification('Gere a apresentação primeiro.', 'error');
-        }
+        if (iframe && iframe.contentWindow) { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (err) { (window as any).showNotification('Não foi possível abrir a janela de impressão.', 'error'); } } 
+        else { (window as any).showNotification('Gere o projeto primeiro.', 'error'); }
     };
 
-    (window as any).baixarPPTX = () => {
-        (window as any).showNotification('A exportação direta para PowerPoint (.pptx) requer integração com pptxgenjs. Esta funcionalidade será ativada no backend da Versão 2.', 'success');
+    (window as any).baixarPPTX = async () => {
+        const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc || !doc.querySelector('section, .page-container')) { (window as any).showNotification('Gere o projeto primeiro.', 'error'); return; }
+        (window as any).showNotification('Gerando PPTX... Aguarde alguns segundos.', 'success');
+        if (!(window as any).html2canvas) { const scriptCanvas = document.createElement('script'); scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; document.head.appendChild(scriptCanvas); }
+        if (!(window as any).PptxGenJS) {
+            const scriptZip = document.createElement('script'); scriptZip.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"; document.head.appendChild(scriptZip);
+            const scriptPptx = document.createElement('script'); scriptPptx.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"; document.head.appendChild(scriptPptx);
+        }
+        setTimeout(async () => {
+            try {
+                const sections = doc.querySelectorAll('section, .page-container'); const pptx = new (window as any).PptxGenJS(); pptx.layout = 'LAYOUT_16x9';
+                for (let i = 0; i < sections.length; i++) {
+                    const slideEl = sections[i] as HTMLElement; const originalOutline = slideEl.style.outline; slideEl.style.outline = 'none'; 
+                    const canvas = await (window as any).html2canvas(slideEl, { scale: 2, useCORS: true });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.8); slideEl.style.outline = originalOutline;
+                    const slide = pptx.addSlide(); slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
+                }
+                const nomeArquivo = siteEditando ? siteEditando.slug : 'Meu_Projeto';
+                pptx.writeFile({ fileName: nomeArquivo + '.pptx' }); (window as any).showNotification('Download do PPTX concluído!', 'success');
+            } catch (err) { console.error(err); (window as any).showNotification('Erro na conversão.', 'error'); }
+        }, 1500);
     };
 
     (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!htmlContent) { (window as any).showNotification('Você precisa criar a apresentação primeiro.', 'error'); return; }
+      if (!htmlContent) { (window as any).showNotification('Você precisa criar o projeto primeiro.', 'error'); return; }
       let cleanHtml = purificarHTML(htmlContent);
-      if (siteEditando) { await supabase.from('apresentacoes_salvas').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Apresentação atualizada com sucesso!', 'success'); return; }
-      const nome = prompt('Qual será o nome da sua Apresentação? (Vai aparecer no Link Público):'); if (!nome) return; 
+      if (siteEditando) { await supabase.from('apresentacoes_salvas').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Projeto atualizado com sucesso!', 'success'); return; }
+      const nome = prompt('Qual será o nome do seu Projeto? (Vai aparecer no Link Público):'); if (!nome) return; 
       let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
       await supabase.from('apresentacoes_salvas').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
       navigator.clipboard.writeText(window.location.origin + '/' + slug);
-      alert('Parabéns! Sua Apresentação já tem um link público online.\nLink copiado:\n' + window.location.origin + '/' + slug);
+      alert('Parabéns! Seu Projeto já tem um link público online.\nLink copiado:\n' + window.location.origin + '/' + slug);
     };
-  }, [siteEditando]); 
+  }, [siteEditando, tipoProjeto]); 
 
   const indexOfLastSite = paginaAtual * SITES_POR_PAGINA;
   const indexOfFirstSite = indexOfLastSite - SITES_POR_PAGINA;
@@ -1174,21 +1093,14 @@ export default function Home() {
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
         .input-label { font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; display: block; }
         .panel-section { padding: 1.2rem; border-bottom: 1px solid #f1f5f9; }
-        
         #previewFrame, #codigoContainer { display: none; }
         #previewFrame.active, #codigoContainer.active { display: block; }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px;}
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        details > summary { list-style: none; }
-        details > summary::-webkit-details-marker { display: none; }
-
-        @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            @page { size: landscape; margin: 0; }
-        }
+        details > summary { list-style: none; } details > summary::-webkit-details-marker { display: none; }
+        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: landscape; margin: 0; } }
       `}} />
 
       {/* MODAIS (SEO E IMPORTAÇÃO) */}
@@ -1200,19 +1112,11 @@ export default function Home() {
                       <button onClick={() => setModalImportarCodigo(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
                   </div>
                   <div className="p-6 bg-slate-50">
-                      <p className="text-sm text-slate-600 mb-4 leading-relaxed">
-                          Cole o código da sua apresentação (Tailwind CSS). O sistema formatará perfeitamente para o palco 16:9 de edição visual.
-                      </p>
-                      <textarea 
-                          value={codigoExterno} 
-                          onChange={(e) => setCodigoExterno(e.target.value)} 
-                          className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar"
-                          placeholder="<!-- Cole o código HTML dos slides aqui... -->"
-                      ></textarea>
+                      <textarea value={codigoExterno} onChange={(e) => setCodigoExterno(e.target.value)} className="w-full h-64 p-4 font-mono text-[13px] bg-[#0d1117] text-[#56d364] rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 custom-scrollbar" placeholder="<!-- Cole o código HTML aqui... -->"></textarea>
                   </div>
                   <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
                       <button onClick={() => setModalImportarCodigo(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition">Cancelar</button>
-                      <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50"><i className="fas fa-magic"></i> Importar Slides</button>
+                      <button onClick={injetarCodigoExterno} disabled={!codigoExterno.trim()} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition shadow-md flex items-center gap-2 disabled:opacity-50"><i className="fas fa-magic"></i> Importar Código</button>
                   </div>
               </div>
           </div>
@@ -1222,18 +1126,18 @@ export default function Home() {
           <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-200">
                   <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                      <h2 className="text-lg font-black text-slate-800"><i className="fas fa-search-dollar text-indigo-500 mr-2"></i> Configurações da Apresentação</h2>
+                      <h2 className="text-lg font-black text-slate-800"><i className="fas fa-search-dollar text-indigo-500 mr-2"></i> Configurações</h2>
                       <button onClick={() => setModalSEO(false)} className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition font-bold shadow-sm"><i className="fas fa-times"></i></button>
                   </div>
                   <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
                       <div className="space-y-4">
                           <div>
-                              <label className="input-label">Título da Apresentação (Aba do Navegador)</label>
-                              <input type="text" value={seoData.title} onChange={e => setSeoData({...seoData, title: e.target.value})} className="input-standard text-sm font-bold" placeholder="Ex: Pitch Deck Comercial Q4" />
+                              <label className="input-label">Título do Projeto</label>
+                              <input type="text" value={seoData.title} onChange={e => setSeoData({...seoData, title: e.target.value})} className="input-standard text-sm font-bold" />
                           </div>
                           <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl mt-4">
-                              <label className="input-label text-orange-800"><i className="fas fa-code text-orange-500 mr-1"></i> Scripts do Cabeçalho (Rastreio)</label>
-                              <textarea rows={3} value={seoData.headScripts} onChange={e => setSeoData({...seoData, headScripts: e.target.value})} className="w-full p-3 font-mono text-[11px] bg-white border border-orange-300 rounded-lg outline-none custom-scrollbar" placeholder="<!-- Ex: Meta Pixel, Tag Analytics -->"></textarea>
+                              <label className="input-label text-orange-800"><i className="fas fa-code text-orange-500 mr-1"></i> Scripts do Cabeçalho</label>
+                              <textarea rows={3} value={seoData.headScripts} onChange={e => setSeoData({...seoData, headScripts: e.target.value})} className="w-full p-3 font-mono text-[11px] bg-white border border-orange-300 rounded-lg outline-none custom-scrollbar" placeholder="<!-- Tags -->"></textarea>
                           </div>
                       </div>
                   </div>
@@ -1244,45 +1148,37 @@ export default function Home() {
           </div>
       )}
 
-      {/* OVERLAY DE CARREGAMENTO AMIGÁVEL */}
       {statusApis.processing && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
               <div className="w-14 h-14 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-5"></div>
               <p className="text-slate-800 font-black text-xl tracking-tight mb-2">{statusApis.texto}</p>
-              <p className="text-slate-500 font-medium text-sm">Estruturando os slides com IA. Isso pode levar alguns segundos...</p>
+              <p className="text-slate-500 font-medium text-sm">A IA está estruturando. Isso pode levar alguns segundos...</p>
           </div>
       )}
 
       {/* PAINEL LATERAL ESQUERDO */}
       <div className="w-[360px] bg-white border-r border-slate-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
-          
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mr-2.5 text-white shadow-md shadow-indigo-200"><i className="fas fa-presentation text-xs"></i></div>
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mr-2.5 text-white shadow-md shadow-indigo-200"><i className="fas fa-book-open text-xs"></i></div>
                   Slide<span className="text-indigo-600">Pro</span>
               </h1>
-              
               <button onClick={toggleInspetor} className={'flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ' + (modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100')}>
-                  <i className={'fas fa-crosshairs ' + (modoInspetor ? 'animate-pulse text-yellow-300' : '')}></i> {modoInspetor ? 'Editando...' : 'Editar Slide'}
+                  <i className={'fas fa-crosshairs ' + (modoInspetor ? 'animate-pulse text-yellow-300' : '')}></i> {modoInspetor ? 'Editando...' : 'Editar Visual'}
               </button>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30">
-              
               {modoInspetor ? (
                   <div className="animate-[fadeIn_0.2s_ease]">
                       <div className="bg-indigo-600 text-white p-4 text-[11px] font-black tracking-widest uppercase flex justify-between items-center shadow-inner">
-                          <span>Editor de Elementos</span>
-                          <i className="fas fa-paint-brush text-indigo-300"></i>
+                          <span>Editor de Elementos</span><i className="fas fa-paint-brush text-indigo-300"></i>
                       </div>
-
                       {!elementoSelecionado ? (
                           <div className="flex flex-col items-center justify-center p-14 text-center text-slate-400">
-                              <div className="w-16 h-16 rounded-full bg-white border-2 border-dashed border-slate-200 flex items-center justify-center mb-4 shadow-sm">
-                                  <i className="fas fa-mouse-pointer text-2xl text-indigo-300"></i>
-                              </div>
+                              <div className="w-16 h-16 rounded-full bg-white border-2 border-dashed border-slate-200 flex items-center justify-center mb-4 shadow-sm"><i className="fas fa-mouse-pointer text-2xl text-indigo-300"></i></div>
                               <p className="text-sm font-bold text-slate-600 mb-1">Selecione para Editar</p>
-                              <p className="text-xs font-medium text-slate-400">Clique em qualquer texto, botão, fundo ou imagem no slide.</p>
+                              <p className="text-xs font-medium text-slate-400">Clique em qualquer elemento.</p>
                           </div>
                       ) : (
                           <div className="pb-10 bg-white">
@@ -1290,112 +1186,67 @@ export default function Home() {
                                   <div className="flex justify-between items-center">
                                       <div className="flex items-center gap-1.5 flex-wrap">
                                           <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md shadow-sm">{elementoSelecionado.tagName}</span>
-                                          <button onClick={() => {
-                                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-                                              iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*');
-                                          }} className="text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition flex items-center bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">
-                                              <i className="fas fa-level-up-alt mr-1"></i> Subir Nível
-                                          </button>
-                                          
-                                          <button onClick={duplicarElementoSelecionado} className="text-[9px] font-bold text-blue-600 hover:text-blue-800 transition flex items-center bg-blue-50 border border-blue-200 hover:border-blue-400 px-2 py-1 rounded shadow-sm" title="Clonar Elemento">
-                                              <i className="fas fa-copy"></i>
-                                          </button>
-                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-red-50 border border-red-200 hover:border-red-400 px-2 py-1 rounded shadow-sm" title="Excluir Elemento">
-                                              <i className="fas fa-trash-alt"></i>
-                                          </button>
+                                          <button onClick={() => { const iframe = document.getElementById('previewFrame') as HTMLIFrameElement; iframe.contentWindow?.postMessage({ type: 'SELECT_PARENT', id: elementoSelecionado.id }, '*'); }} className="text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition flex items-center bg-white border border-slate-200 px-2 py-1 rounded shadow-sm"><i className="fas fa-level-up-alt mr-1"></i> Subir Nível</button>
+                                          <button onClick={duplicarElementoSelecionado} className="text-[9px] font-bold text-blue-600 hover:text-blue-800 transition flex items-center bg-blue-50 border border-blue-200 hover:border-blue-400 px-2 py-1 rounded shadow-sm" title="Clonar Elemento"><i className="fas fa-copy"></i></button>
+                                          <button onClick={deletarElementoSelecionado} className="text-[9px] font-bold text-red-500 hover:text-red-700 transition flex items-center bg-red-50 border border-red-200 hover:border-red-400 px-2 py-1 rounded shadow-sm" title="Excluir Elemento"><i className="fas fa-trash-alt"></i></button>
                                       </div>
                                   </div>
                               </div>
-
                               <div className="panel-section bg-slate-50/50 border-t border-slate-100">
-                                  <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento (Abaixo/Dentro)</label>
+                                  <label className="input-label mb-2 text-[9px] text-slate-500">Inserir Novo Elemento</label>
                                   <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
-                                      {tipoProjeto !== 'ebook' && (
-                                          <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
-                                      )}
+                                      {tipoProjeto !== 'ebook' && (<button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>)}
                                   </div>
-                                  
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
                                       <button onClick={() => moverSecaoInteira('UP')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover para Trás"><i className="fas fa-level-up-alt"></i> Mover Seção ⬆️</button>
                                       <button onClick={() => moverSecaoInteira('DOWN')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Mover para Frente"><i className="fas fa-level-down-alt"></i> Mover Seção ⬇️</button>
-                                      <button onClick={inverterLayoutBox} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Inverter Lados da Foto/Texto"><i className="fas fa-exchange-alt"></i> Inverter Lados</button>
+                                      <button onClick={inverterLayoutBox} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[9px] font-bold py-1.5 rounded transition shadow-sm" title="Inverter Lados"><i className="fas fa-exchange-alt"></i> Inverter Lados</button>
                                   </div>
                               </div>
-
-                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO SIMPLES */}
                               <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
                                   <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Link de Destino</label>
-                                  <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
+                                  <input type="text" placeholder="Cole o link" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
                               </div>
-
                               <div className="panel-section border-t border-slate-100 flex justify-between items-center mt-2">
-                                  <label className="input-label mb-0 text-[10px]">Reordenar (Apenas Elemento)</label>
+                                  <label className="input-label mb-0 text-[10px]">Reordenar Elemento</label>
                                   <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
                                       <button onClick={() => moverElemento('UP')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-up mr-1"></i> Subir</button>
                                       <button onClick={() => moverElemento('DOWN')} className="px-3 h-7 flex items-center justify-center rounded text-[10px] transition text-slate-500 hover:bg-slate-200 hover:text-slate-800 font-bold"><i className="fas fa-arrow-down mr-1"></i> Descer</button>
                                   </div>
                               </div>
-
                               {elementoSelecionado.tagName === 'img' ? (
                                   <>
                                       <div className="panel-section border-t border-slate-100 mt-2">
                                           <label className="input-label">Mudar Imagem</label>
                                           <input type="text" value={elementoSelecionado.src} onChange={(e) => atualizarElemento('src', e.target.value)} className="input-standard font-mono mb-3 text-[10px]" />
-                                          <div className="flex gap-2">
-                                              <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
-                                                  <option value="realista">Fotografia Realista</option>
-                                                  <option value="cinematografica">Cinematográfica (Filme)</option>
-                                                  <option value="estudio">Estúdio / Editorial</option>
-                                                  <option value="minimalista">Minimalista / Clean</option>
-                                              </select>
-                                          </div>
                                           <div className="flex gap-2 mt-2">
                                               <button onClick={() => gerarNovaImagemIAAutomatica(false)} className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold py-2 rounded-lg transition border border-indigo-100"><i className="fas fa-robot mr-1.5"></i> Usar IA</button>
                                               <label className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition"><i className="fas fa-upload mr-1.5"></i> Arquivo<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, false)} /></label>
                                           </div>
                                       </div>
-                                      
                                       <div className="panel-section border-t border-slate-100">
                                           <label className="input-label mb-2 text-[9px]">Alinhar Imagem</label>
                                           <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Esquerda"><i className="fas fa-align-left"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Centro"><i className="fas fa-align-center"></i></button>
-                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Direita"><i className="fas fa-align-right"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-left"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-center"></i></button>
+                                              <button onClick={() => atualizarElemento('boxAlign', 'right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-right"></i></button>
                                           </div>
                                       </div>
-
                                       <div className="panel-section grid grid-cols-2 gap-4">
                                           <div>
-                                              <label className="input-label">Proporção (Formato)</label>
-                                              <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => {
-                                                  const novoFormato = e.target.value;
-                                                  atualizarElemento('imgFormat', novoFormato);
-                                                  if(novoFormato !== '') {
-                                                      gerarNovaImagemIAAutomatica(false, novoFormato);
-                                                  }
-                                              }} className="input-standard border-indigo-200 focus:border-indigo-500 bg-indigo-50">
-                                                  <option value="">Tamanho Original</option>
-                                                  <option value="aspect-video">Paisagem (Deitado)</option>
-                                                  <option value="aspect-[3/4]">Retrato (Em pé)</option>
-                                                  <option value="aspect-square">Quadrado</option>
+                                              <label className="input-label">Proporção</label>
+                                              <select value={elementoSelecionado.imgFormat || ''} onChange={(e) => { const novoFormato = e.target.value; atualizarElemento('imgFormat', novoFormato); if(novoFormato !== '') gerarNovaImagemIAAutomatica(false, novoFormato); }} className="input-standard border-indigo-200 focus:border-indigo-500 bg-indigo-50">
+                                                  <option value="">Tamanho Original</option><option value="aspect-video">Paisagem (Deitado)</option><option value="aspect-[3/4]">Retrato (Em pé)</option><option value="aspect-square">Quadrado</option>
                                               </select>
                                           </div>
                                           <div>
-                                              <label className="input-label">Bordas da Foto</label>
+                                              <label className="input-label">Bordas</label>
                                               <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('imgRounded', e.target.value)} className="input-standard">
-                                                  <option value="none">Retas (Simples)</option>
-                                                  <option value="rounded-md">Suaves</option>
-                                                  <option value="rounded-xl">Arredondadas</option>
-                                                  <option value="rounded-full">Círculo Perfeito</option>
+                                                  <option value="none">Retas</option><option value="rounded-md">Suaves</option><option value="rounded-xl">Arredondadas</option><option value="rounded-full">Círculo</option>
                                               </select>
                                           </div>
-                                      </div>
-                                      
-                                      <div className="panel-section">
-                                          <label className="input-label flex justify-between">Transparência (Opacidade) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
-                                          <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
                                       </div>
                                   </>
                               ) : (
@@ -1404,7 +1255,7 @@ export default function Home() {
                                           {elementoSelecionado.bloqueiaTexto ? (
                                               <div className="bg-orange-50 p-3 rounded-lg border border-orange-200 text-orange-800 mb-4">
                                                   <p className="text-xs font-bold mb-1"><i className="fas fa-exclamation-triangle"></i> Container Estrutural</p>
-                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar seus conteúdos. Neste painel você ajusta a Posição, Cor e Fundo desta caixa.</p>
+                                                  <p className="text-[10px] leading-relaxed">Clique em textos ou botões para editar.</p>
                                               </div>
                                           ) : (
                                               <div className="mb-4">
@@ -1412,183 +1263,23 @@ export default function Home() {
                                                   <textarea rows={4} value={elementoSelecionado.text} onChange={(e) => atualizarElemento('text', e.target.value, true)} className="input-standard resize-y shadow-inner text-sm"></textarea>
                                               </div>
                                           )}
-
-                                          <div className="grid grid-cols-2 gap-4">
-                                              <div>
-                                                  <label className="input-label mb-2 text-[9px]">Alinhar Texto</label>
-                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-left"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-center"></i></button>
-                                                      <button onClick={() => atualizarElemento('textAlign', 'text-right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.textAlign === 'text-right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')}><i className="fas fa-align-right"></i></button>
-                                                  </div>
-                                              </div>
-                                              <div>
-                                                  <label className="input-label mb-2 text-[9px]">Alinhar Bloco</label>
-                                                  <div className="flex bg-slate-100 rounded-lg border border-slate-200 p-1">
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'left')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'left' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Mover para a Esquerda"><i className="fas fa-align-left"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'center')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'center' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Centralizar Caixa"><i className="fas fa-align-center"></i></button>
-                                                      <button onClick={() => atualizarElemento('boxAlign', 'right')} className={'flex-1 h-7 flex items-center justify-center rounded text-[10px] transition ' + (elementoSelecionado.boxAlign === 'right' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-slate-500 hover:bg-slate-200')} title="Mover para a Direita"><i className="fas fa-align-right"></i></button>
-                                                  </div>
-                                              </div>
-                                          </div>
                                       </div>
-
-                                      {/* FORMATADOR DE BOTÕES, LINKS E CAIXAS */}
-                                      {(elementoSelecionado.tagName === 'a' || elementoSelecionado.tagName === 'button' || elementoSelecionado.tagName === 'div') && (
-                                          <div className="panel-section border-t border-slate-100 bg-slate-50/30">
-                                              <label className="input-label mb-3"><i className="fas fa-expand-arrows-alt text-slate-400"></i> Tamanho e Estrutura</label>
-                                              
-                                              <div className="grid grid-cols-2 gap-4 mb-4">
-                                                  <div>
-                                                      <div className="flex justify-between items-center mb-1">
-                                                          <label className="text-[9px] text-slate-500">Largura (Lateral)</label>
-                                                          {elementoSelecionado.paddingX?.startsWith('px-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingX.match(/\d+/)?.[0]}px</span>}
-                                                      </div>
-                                                      <select value={elementoSelecionado.paddingX?.startsWith('px-[') ? 'custom' : (elementoSelecionado.paddingX || 'none')} onChange={(e) => {
-                                                          if(e.target.value === 'custom') { atualizarElemento('paddingX', 'px-[40px]'); }
-                                                          else { atualizarElemento('paddingX', e.target.value); }
-                                                      }} className="input-standard">
-                                                          <option value="none">Padrão</option>
-                                                          <option value="px-4">Pequena</option>
-                                                          <option value="px-8">Média</option>
-                                                          <option value="px-12">Grande</option>
-                                                          <option value="px-16">Extra Grande</option>
-                                                          <option value="px-24">Gigante</option>
-                                                          <option value="w-full text-center">Largura Total (Cheia)</option>
-                                                          <option value="custom">Personalizado (Slider)</option>
-                                                      </select>
-                                                      {elementoSelecionado.paddingX?.startsWith('px-[') && (
-                                                          <input type="range" min="0" max="300" value={parseInt(elementoSelecionado.paddingX.match(/\d+/)?.[0] || '40')} onChange={(e) => atualizarElemento('paddingX', 'px-[' + e.target.value + 'px]')} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-                                                      )}
-                                                  </div>
-                                                  <div>
-                                                      <div className="flex justify-between items-center mb-1">
-                                                          <label className="text-[9px] text-slate-500">Altura (Vertical)</label>
-                                                          {elementoSelecionado.paddingY?.startsWith('py-[') && <span className="text-[9px] font-bold text-indigo-600">{elementoSelecionado.paddingY.match(/\d+/)?.[0]}px</span>}
-                                                      </div>
-                                                      <select value={elementoSelecionado.paddingY?.startsWith('py-[') ? 'custom' : (elementoSelecionado.paddingY || 'none')} onChange={(e) => {
-                                                          if(e.target.value === 'custom') { atualizarElemento('paddingY', 'py-[16px]'); }
-                                                          else { atualizarElemento('paddingY', e.target.value); }
-                                                      }} className="input-standard">
-                                                          <option value="none">Padrão</option>
-                                                          <option value="py-2">Fino</option>
-                                                          <option value="py-4">Médio</option>
-                                                          <option value="py-6">Grosso</option>
-                                                          <option value="py-8">Extra Grosso</option>
-                                                          <option value="py-12">Gigante</option>
-                                                          <option value="custom">Personalizado (Slider)</option>
-                                                      </select>
-                                                      {elementoSelecionado.paddingY?.startsWith('py-[') && (
-                                                          <input type="range" min="0" max="150" value={parseInt(elementoSelecionado.paddingY.match(/\d+/)?.[0] || '16')} onChange={(e) => atualizarElemento('paddingY', 'py-[' + e.target.value + 'px]')} className="w-full h-1.5 mt-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-                                                      )}
-                                                  </div>
-                                              </div>
-                                              
-                                              <label className="input-label mb-2"><i className="fas fa-shapes text-slate-400"></i> Estilo e Profundidade</label>
-                                              <div className="grid grid-cols-2 gap-4 mb-4">
-                                                  <div>
-                                                      <label className="text-[9px] text-slate-500 mb-1 block">Arredondamento</label>
-                                                      <select value={elementoSelecionado.rounded || 'none'} onChange={(e) => atualizarElemento('rounded', e.target.value)} className="input-standard">
-                                                          <option value="none">Reto (Quadrado)</option>
-                                                          <option value="rounded-md">Leve</option>
-                                                          <option value="rounded-xl">Arredondado</option>
-                                                          <option value="rounded-full">Pílula</option>
-                                                      </select>
-                                                  </div>
-                                                  <div>
-                                                      <label className="text-[9px] text-slate-500 mb-1 block">Espessura da Borda</label>
-                                                      <select value={elementoSelecionado.borderW || 'none'} onChange={(e) => atualizarElemento('borderW', e.target.value)} className="input-standard">
-                                                          <option value="none">Sem Borda</option>
-                                                          <option value="border-2">Fina</option>
-                                                          <option value="border-4">Grossa</option>
-                                                      </select>
-                                                  </div>
-                                              </div>
-
-                                              <div>
-                                                  <label className="text-[9px] text-slate-500 mb-1 block">Sombra</label>
-                                                  <select value={elementoSelecionado.shadow || 'none'} onChange={(e) => atualizarElemento('shadow', e.target.value)} className="input-standard">
-                                                      <option value="none">Plano</option>
-                                                      <option value="shadow-md">Sombra Suave</option>
-                                                      <option value="shadow-xl">Sombra Projetada</option>
-                                                      <option value="shadow-2xl shadow-indigo-500/50">Brilho Colorido (Glow)</option>
-                                                  </select>
-                                              </div>
-                                          </div>
-                                      )}
-                                      
                                       <div className="panel-section grid grid-cols-2 gap-5 border-t border-slate-100">
                                           <div>
-                                              <label className="input-label flex justify-between">Tamanho da Letra <span>{elementoSelecionado.fontSize}px</span></label>
+                                              <label className="input-label flex justify-between">Tamanho <span>{elementoSelecionado.fontSize}px</span></label>
                                               <input type="range" min="10" max="120" value={elementoSelecionado.fontSize || 16} onChange={(e) => atualizarElemento('fontSize', parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-3" />
                                           </div>
                                           <div className="flex flex-col gap-3">
-                                              <div className="flex justify-between items-center">
-                                                  <label className="text-[10px] font-bold text-slate-600 uppercase">Cor do Fundo</label>
-                                                  <input type="color" value={elementoSelecionado.bgColor || '#ffffff'} onChange={(e) => atualizarElemento('bgColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
-                                              </div>
-                                              <div className="flex justify-between items-center">
-                                                  <label className="text-[10px] font-bold text-slate-600 uppercase">Cor da Borda</label>
-                                                  <input type="color" value={elementoSelecionado.borderColor || '#cccccc'} onChange={(e) => atualizarElemento('borderColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
-                                              </div>
-                                              <div className="flex justify-between items-center">
-                                                  <label className="text-[10px] font-bold text-slate-600 uppercase">Cor da Letra</label>
-                                                  <input type="color" value={elementoSelecionado.textColor || '#000000'} onChange={(e) => atualizarElemento('textColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" />
-                                              </div>
+                                              <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-slate-600 uppercase">Fundo</label><input type="color" value={elementoSelecionado.bgColor || '#ffffff'} onChange={(e) => atualizarElemento('bgColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" /></div>
+                                              <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-slate-600 uppercase">Letra</label><input type="color" value={elementoSelecionado.textColor || '#000000'} onChange={(e) => atualizarElemento('textColor', e.target.value)} className="w-7 h-7 rounded border border-slate-200 cursor-pointer p-0 shadow-sm" /></div>
                                           </div>
-                                      </div>
-
-                                      <div className="panel-section border-t border-slate-100">
-                                          <label className="input-label flex justify-between">Opacidade da Cor (Película) <span>{Math.round((elementoSelecionado.opacity || 1) * 100)}%</span></label>
-                                          <input type="range" min="0" max="100" value={(elementoSelecionado.opacity || 1) * 100} onChange={(e) => atualizarElemento('opacity', parseInt(e.target.value) / 100)} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2" />
-                                      </div>
-
-                                      <div className="panel-section border-t border-slate-100">
-                                          <label className="input-label flex items-center gap-1.5"><i className="fas fa-image text-slate-400"></i> Fundo do Slide</label>
-                                          <div className="flex gap-2 mb-2">
-                                              <input type="text" placeholder="Link direto da imagem..." value={elementoSelecionado.bgImage || ''} onChange={(e) => atualizarElemento('bgImage', e.target.value)} className="input-standard flex-1 text-[10px]" />
-                                          </div>
-                                          <div className="flex gap-2">
-                                              <select value={aiSearchType} onChange={(e) => setAiSearchType(e.target.value)} className="flex-1 input-standard text-[10px] bg-slate-50">
-                                                  <option value="realista">Fotografia Realista</option>
-                                                  <option value="cinematografica">Cinematográfica (Filme)</option>
-                                                  <option value="estudio">Estúdio / Editorial</option>
-                                                  <option value="minimalista">Minimalista / Clean</option>
-                                              </select>
-                                          </div>
-                                          <div className="flex gap-2 mt-2">
-                                              <button onClick={() => gerarNovaImagemIAAutomatica(true)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded transition"><i className="fas fa-robot mr-1"></i> Usar IA</button>
-                                              <label className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold py-1.5 rounded text-center cursor-pointer transition"><i className="fas fa-desktop mr-1"></i> Arquivo<input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadImgElem(e, true)} /></label>
-                                          </div>
-                                      </div>
-
-                                      <div className="panel-section bg-slate-50/50 border-t border-slate-100">
-                                          <label className="input-label">Efeitos Interativos (Ao passar o mouse)</label>
-                                          <select onChange={(e) => atualizarElemento('animationClass', e.target.value)} className="input-standard font-medium">
-                                              <option value="">Nenhum</option>
-                                              <option value="hover:scale-105 transition-transform duration-300">Aumentar Suavemente (Zoom In)</option>
-                                              <option value="hover:-translate-y-2 transition-transform duration-300">Levantar Levemente (Flutuar)</option>
-                                              <option value="hover:shadow-2xl hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all duration-300">Levantar com Brilho Colorido</option>
-                                              <option value="hover:rotate-3 transition-transform duration-300">Inclinação Dinâmica</option>
-                                              <option value="animate-pulse">Pulsar sem parar (Atenção Máxima)</option>
-                                              <option value="animate-bounce">Balançar (Tremidinha)</option>
-                                          </select>
                                       </div>
                                   </>
                               )}
-
-                              {/* PAINEL DO COPYWRITER IA */}
                               <div className="m-5 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 shadow-xl text-white">
-                                  <label className="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-4 flex items-center"><i className="fas fa-robot text-xl mr-2 text-white"></i> Otimização com IA</label>
-                                  
-                                  {elementoSelecionado.tagName !== 'img' && !elementoSelecionado.bloqueiaTexto && (
-                                      <div className="grid grid-cols-2 gap-2.5 mb-4">
-                                          <button onClick={() => otimizarComIA("Reescreva o slide com copy persuasiva para prender a atenção da audiência, deixando o texto corporativo e elegante.")} className="bg-slate-700 hover:bg-slate-600 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-slate-600">Mais Persuasivo</button>
-                                          <button onClick={() => otimizarComIA("Reescreva resumindo este slide de forma clara e direta (bullet points se necessário) focando nos pontos chave.")} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold py-2.5 rounded-lg text-white transition shadow-sm border border-indigo-500 flex items-center justify-center gap-1.5">Resumir Tópico</button>
-                                      </div>
-                                  )}
+                                  <label className="text-[11px] font-black uppercase tracking-widest text-indigo-300 mb-4 flex items-center"><i className="fas fa-robot text-xl mr-2 text-white"></i> Otimização IA</label>
                                   <div className="flex gap-2 relative">
-                                      <input type="text" id="ai_prompt_element" placeholder="Instrução customizada para a IA..." className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-4 py-3 outline-none focus:border-indigo-400 placeholder-slate-400" />
+                                      <input type="text" id="ai_prompt_element" placeholder="Instrução para a IA..." className="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded-lg px-4 py-3 outline-none focus:border-indigo-400 placeholder-slate-400" />
                                       <button onClick={() => otimizarComIA()} className="absolute right-1.5 top-1.5 bottom-1.5 w-10 bg-indigo-600 hover:bg-indigo-500 rounded-md flex items-center justify-center transition shadow-sm"><i className="fas fa-paper-plane"></i></button>
                                   </div>
                               </div>
@@ -1596,124 +1287,66 @@ export default function Home() {
                       )}
                   </div>
               ) : (
-                  
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
-                      
                       <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-                          <button onClick={() => setAbaAtiva('gerar')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-magic mr-1.5"></i> Criar Slide</button>
+                          <button onClick={() => setAbaAtiva('gerar')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-magic mr-1.5"></i> Criar Projeto</button>
                           <button onClick={() => setAbaAtiva('blocos')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-cubes mr-1.5"></i> Modelos</button>
                       </div>
 
                       {abaAtiva === 'blocos' ? (
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              <div>
-                                  {tipoProjeto === 'slides' ? (
-                                      <>
-                                          <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> Templates de Slide</h3>
-                                          <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione slides completos à sua apresentação. Eles entrarão <b>após o slide selecionado</b>.</p>
-                                          
-                                          <div className="space-y-4">
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Slide de FAQ</p>
-                                                      <p className="text-[10px] text-slate-500">Perguntas Frequentes do Público</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('faq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
-
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Slide de Garantia</p>
-                                                      <p className="text-[10px] text-slate-500">Argumentação de Risco Zero</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('garantia')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
-
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Slide de Casos</p>
-                                                      <p className="text-[10px] text-slate-500">Exemplos e Métricas Reais</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
-
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Slide Financeiro</p>
-                                                      <p className="text-[10px] text-slate-500">Investimento e Escopo de Projeto</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
-
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Capa do Palestrante (Esq)</p>
-                                                      <p className="text-[10px] text-slate-500">Foto e Introdução da Autoridade</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('autorEsq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
-
-                                              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                                  <div>
-                                                      <p className="font-bold text-sm text-slate-800">Capa do Palestrante (Dir)</p>
-                                                      <p className="text-[10px] text-slate-500">Foto e Introdução da Autoridade</p>
-                                                  </div>
-                                                  <button onClick={() => injetarBlocoPronto('autorDir')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                              </div>
+                              {tipoProjeto === 'slides' ? (
+                                  <>
+                                      <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> Templates de Slide</h3>
+                                      <div className="space-y-4">
+                                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                              <div><p className="font-bold text-sm text-slate-800">Slide de FAQ</p></div>
+                                              <button onClick={() => injetarBlocoPronto('faq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
                                           </div>
-                                      </>
-                                  ) : (
-                                      <div className="p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl">
-                                          <p className="text-xs font-bold mb-1"><i className="fas fa-info-circle"></i> Função não disponível</p>
-                                          <p className="text-[10px] leading-relaxed">Os blocos prontos são exclusivos para o modo de Slides (16:9). No modo Ebook, o sistema foca no texto longo do próprio projeto gerado.</p>
+                                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                              <div><p className="font-bold text-sm text-slate-800">Slide de Casos</p></div>
+                                              <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                          </div>
+                                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
+                                              <div><p className="font-bold text-sm text-slate-800">Slide Financeiro</p></div>
+                                              <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
+                                          </div>
                                       </div>
-                                  )}
-
-                                  <div className="mt-8 pt-6 border-t border-slate-100">
-                                      <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Alteração Global em Massa</h3>
-                                      <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura da apresentação para você (ex: Trocar todas as cores, alterar fonte geral).</p>
-                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os slides no modo escuro profundo..."></textarea>
-                                      <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                          <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar na Apresentação
-                                      </button>
+                                  </>
+                              ) : (
+                                  <div className="p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl">
+                                      <p className="text-xs font-bold mb-1"><i className="fas fa-info-circle"></i> Função não disponível</p>
+                                      <p className="text-[10px] leading-relaxed">No modo Ebook, o sistema foca na fluidez do conteúdo gerado.</p>
                                   </div>
+                              )}
+                              <div className="mt-8 pt-6 border-t border-slate-100">
+                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Alteração Global em Massa</h3>
+                                  <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os fundos no modo escuro profundo..."></textarea>
+                                  <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"><i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar no Projeto</button>
                               </div>
                           </div>
                       ) : (
                           <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              
-                              {/* NOVO: SELETOR DE PROJETO (SLIDES VS EBOOK) */}
                               <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2">
-                                      <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]"><i className="fas fa-project-diagram"></i></span> 
-                                      Tipo de Projeto
-                                  </h3>
+                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]"><i className="fas fa-project-diagram"></i></span> Tipo de Projeto</h3>
                                   <div className="flex bg-white p-1 rounded-lg border border-indigo-100 mb-3 shadow-sm">
-                                      <button 
-                                          onClick={() => setTipoProjeto('slides')} 
-                                          className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'slides' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500 hover:bg-slate-50')}
-                                      >
-                                          📊 Slides 16:9
-                                      </button>
-                                      <button 
-                                          onClick={() => setTipoProjeto('ebook')} 
-                                          className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'ebook' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500 hover:bg-slate-50')}
-                                      >
-                                          📖 Ebook / Livro
-                                      </button>
+                                      <button onClick={() => setTipoProjeto('slides')} className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'slides' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500 hover:bg-slate-50')}>📊 Slides 16:9</button>
+                                      <button onClick={() => setTipoProjeto('ebook')} className={'flex-1 py-2 text-xs font-bold rounded-md transition ' + (tipoProjeto === 'ebook' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500 hover:bg-slate-50')}>📖 Ebook / Livro</button>
                                   </div>
-
                                   {tipoProjeto === 'ebook' && (
                                       <div className="animate-[fadeIn_0.2s_ease] mt-3 pt-3 border-t border-indigo-100/50">
                                           <label className="input-label text-indigo-800">Formato de Saída (Impressão/PDF)</label>
-                                          <select 
-                                              value={formatoEbook} 
-                                              onChange={(e) => setFormatoEbook(e.target.value as any)} 
-                                              className="input-standard font-bold text-slate-700 border-indigo-200"
-                                          >
+                                          <select value={formatoEbook} onChange={(e) => setFormatoEbook(e.target.value as any)} className="input-standard font-bold text-slate-700 border-indigo-200 mb-3">
                                               <option value="a4">A4 Digital (Com Capa Cheia)</option>
                                               <option value="14x21">Livro 14x21cm (Folha de Rosto)</option>
                                               <option value="15x21">Livro 15x21cm (Folha de Rosto)</option>
+                                          </select>
+                                          
+                                          <label className="input-label text-indigo-800">Estilo de Capítulo</label>
+                                          <select value={estiloCapitulo} onChange={(e) => setEstiloCapitulo(e.target.value as any)} className="input-standard font-bold text-slate-700 border-indigo-200">
+                                              <option value="exclusiva">Página Exclusiva Escura (Igual Livro)</option>
+                                              <option value="imagem_abaixo">Título + Imagem IA na mesma página</option>
+                                              <option value="misto">Misto (Alternar os dois)</option>
                                           </select>
                                       </div>
                                   )}
@@ -1722,43 +1355,25 @@ export default function Home() {
                               <div>
                                   <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo Visual</h3>
                                   <div className="space-y-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-                                      
                                       <div>
                                           <label className="input-label mb-2">Tipografia Institucional</label>
                                           <select value={fontFamily} onChange={(e) => aplicarFonte(e.target.value)} className="input-standard font-medium text-slate-800">
                                               <option value="sans-serif">Padrão do Sistema</option>
-                                              <option value="Inter">Inter (Moderna e Limpa)</option>
-                                              <option value="Montserrat">Montserrat (Larga e Corporativa)</option>
-                                              <option value="Playfair Display">Playfair Display (Premium Serifada)</option>
-                                              <option value="Roboto">Roboto (Clássica e Neutra)</option>
-                                              <option value="Lora">Lora (Leitura Acadêmica)</option>
+                                              <option value="Inter">Inter (Moderna)</option>
+                                              <option value="Montserrat">Montserrat (Corporativa)</option>
+                                              <option value="Playfair Display">Playfair Display (Premium)</option>
+                                              <option value="Lora">Lora (Acadêmica)</option>
                                           </select>
                                       </div>
-
                                       <div className="pt-2 border-t border-slate-100">
                                           <label className="input-label mb-2">Paleta Base de Cores</label>
                                           <div className="flex flex-wrap gap-2.5">
-                                              {[
-                                                  {id: 'auto', cor: 'bg-gradient-to-r from-blue-400 to-purple-500', title: 'Extrair da Imagem'},
-                                                  {id: 'dark', cor: 'bg-slate-900', title: 'Modo Escuro (Contraste Alto)'},
-                                                  {id: 'azul', cor: 'bg-blue-600', title: 'Azul Institucional'},
-                                                  {id: 'verde', cor: 'bg-emerald-500', title: 'Verde ESG / Financeiro'},
-                                                  {id: 'roxo', cor: 'bg-purple-600', title: 'Roxo Criativo'},
-                                                  {id: 'rosa', cor: 'bg-pink-500', title: 'Rosa Suave'},
-                                                  {id: 'vermelho', cor: 'bg-red-600', title: 'Vermelho Impacto'},
-                                                  {id: 'amarelo', cor: 'bg-yellow-400', title: 'Amarelo Alerta'},
-                                                  {id: 'laranja', cor: 'bg-orange-500', title: 'Laranja Engajamento'},
-                                                  {id: 'terracota', cor: 'bg-amber-700', title: 'Terracota Conforto'},
-                                                  {id: 'cinza', cor: 'bg-zinc-500', title: 'Cinza Analítico'},
-                                                  {id: 'personalizada', cor: 'bg-white border-2 border-dashed border-slate-300', title: 'Escolher Manualmente'}
-                                              ].map(c => (
+                                              {[{id: 'auto', cor: 'bg-gradient-to-r from-blue-400 to-purple-500', title: 'Extrair da Imagem'},{id: 'dark', cor: 'bg-slate-900', title: 'Modo Escuro'},{id: 'azul', cor: 'bg-blue-600', title: 'Azul'},{id: 'verde', cor: 'bg-emerald-500', title: 'Verde'},{id: 'roxo', cor: 'bg-purple-600', title: 'Roxo'},{id: 'rosa', cor: 'bg-pink-500', title: 'Rosa'},{id: 'vermelho', cor: 'bg-red-600', title: 'Vermelho'},{id: 'amarelo', cor: 'bg-yellow-400', title: 'Amarelo'},{id: 'laranja', cor: 'bg-orange-500', title: 'Laranja'},{id: 'personalizada', cor: 'bg-white border-2 border-dashed border-slate-300', title: 'Manual'}].map(c => (
                                                   <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={'w-8 h-8 rounded-full shadow-sm transition-transform ' + (corSelecionada === c.id ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : 'hover:scale-105') + ' ' + c.cor + ' flex items-center justify-center'} title={c.title}>
-                                                      {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}
-                                                      {c.id === 'personalizada' && <i className="fas fa-plus text-slate-400 text-[10px]"></i>}
+                                                      {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}{c.id === 'personalizada' && <i className="fas fa-plus text-slate-400 text-[10px]"></i>}
                                                   </button>
                                               ))}
                                           </div>
-                                          
                                           {corSelecionada === 'personalizada' && (
                                               <div className="flex gap-3 mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 animate-[fadeIn_0.2s_ease]">
                                                   <div className="flex-1"><label className="input-label">Fundo</label><input type="color" id="corFundo" className="w-full h-8 rounded-md cursor-pointer p-0 border border-slate-300 shadow-sm" defaultValue="#ffffff" /></div>
@@ -1766,52 +1381,33 @@ export default function Home() {
                                               </div>
                                           )}
                                       </div>
-
                                       <div className="pt-2 border-t border-slate-100">
                                           <label htmlFor="nichoEstilo" className="input-label">Diretriz de Design</label>
                                           <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
-                                              <option value="minimalista">Clean e Corporativo</option>
-                                              <option value="premium">Premium Elegante (Keynote)</option>
-                                              <option value="agressivo">Venda de Palco (Alto Impacto)</option>
-                                              <option value="terapia">Acolhedor e Acadêmico</option>
+                                              <option value="minimalista">Clean e Corporativo</option><option value="premium">Premium Elegante</option><option value="agressivo">Venda de Palco</option><option value="terapia">Acolhedor e Acadêmico</option>
                                           </select>
-                                          
                                           <div className="pt-4 mt-4 border-t border-slate-100">
                                               <label className="input-label">Motor de Texto (IA)</label>
-                                              <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
-                                                  <option value="gemini">Gemini (Qualidade Profunda)</option>
-                                                  <option value="grok">Groq (Rápido e Criativo)</option>
-                                              </select>
+                                              <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700"><option value="gemini">Gemini (Profundo)</option><option value="grok">Groq (Rápido)</option></select>
                                           </div>
                                       </div>
                                   </div>
                               </div>
 
-                              {/* A NOVA SEÇÃO 3: HÍBRIDA (COPY + REFERÊNCIA) */}
                               <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
-                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span> Base da Apresentação</h3>
-                                  
+                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span> Base do Projeto</h3>
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Texto / Tópicos / Roteiro</label>
-                                      <textarea 
-                                          value={productContent} 
-                                          maxLength={5000} 
-                                          onChange={(e) => setProductContent(e.target.value)} 
-                                          className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" 
-                                          placeholder="Cole os tópicos da aula, o roteiro da palestra ou comandos extras para a IA..."
-                                      ></textarea>
+                                      <textarea value={productContent} maxLength={5000} onChange={(e) => setProductContent(e.target.value)} className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" placeholder="Cole os tópicos, roteiro..."></textarea>
                                       <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
                                   </div>
-
                                   <div className="mb-4">
                                       <label className="input-label text-indigo-800">Identidade Visual (Imagem Base)</label>
                                       <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
                                           <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-2"><i className="fas fa-image text-lg"></i></div>
                                           <p className="text-xs font-bold text-slate-700">Anexar referência de Layout</p>
-                                          <p className="text-[10px] font-medium text-slate-500 mt-0.5">Ou cole aqui (Ctrl+V)</p>
                                       </div>
                                       <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
-                                      
                                       {uploadedImages.length > 0 && (
                                           <div className="flex gap-3 mt-3 overflow-x-auto pb-2 custom-scrollbar">
                                               {uploadedImages.map((imgObj, idx) => (
@@ -1823,12 +1419,8 @@ export default function Home() {
                                           </div>
                                       )}
                                   </div>
-
-                                  <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                      <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Projeto Agora
-                                  </button>
+                                  <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"><i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Projeto Agora</button>
                               </div>
-
                           </div>
                       )}
                   </div>
@@ -1836,54 +1428,50 @@ export default function Home() {
           </div>
       </div>
 
+      {/* PAINEL DIREITO COMPLETO */}
       <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
           
           <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
               <div className="flex items-center gap-3 md:gap-5">
                   <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition">Ver Visual</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-[11px] bg-white text-indigo-700 shadow-sm transition">Ver Visual</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
                   </div>
                   
-                  {/* SIMULADOR DE DISPOSITIVOS */}
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="16:9 Slide Monitor"><i className="fas fa-desktop text-xs"></i></button>
-                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
-                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Vertical Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Desktop"><i className="fas fa-desktop text-xs"></i></button>
+                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
                   </div>
 
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-file-import"></i> Importar HTML
-                  </button>
-                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-cog"></i> Ajustes de Slide
-                  </button>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"><i className="fas fa-file-import"></i> Importar HTML</button>
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"><i className="fas fa-cog"></i> Ajustes</button>
                   
                   <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-[11px] font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
               </div>
 
               <div className="flex items-center gap-3 md:gap-4">
-                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Meus Projetos</button>
+                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-[11px] px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Meus Projetos</button>
                   <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
                   
                   <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
-                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
+                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
                       {tipoProjeto === 'slides' && (
-                          <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
+                          <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
                       )}
-                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
+                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
                   </div>
                   
                   {siteEditando ? (
                       <div className="flex gap-2">
-                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg transition border border-slate-200">Cancelar</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
                       </div>
                   ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
                   )}
               </div>
           </div>
@@ -1919,51 +1507,6 @@ export default function Home() {
               </div>
           </div>
       </div>
-      
-      {modalMeusSitesAberto && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Apresentações Salvas</h2>
-              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
-            </div>
-            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
-              {carregandoSites ? <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando apresentações...</p></div> : listaSites.length === 0 ? <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Você ainda não tem nenhuma apresentação.</p><p className="text-sm text-slate-400 mt-2">Gere seus primeiros slides e publique para aparecer aqui!</p></div> : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {sitesAtuais.map((site) => {
-                        const linkUrl = window.location.origin + '/' + site.slug;
-                        return (
-                          <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
-                            <h3 className="font-black text-base text-slate-800 mb-3 truncate group-hover:text-indigo-700 transition-colors">{site.titulo}</h3>
-                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
-                                <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
-                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
-                            </div>
-                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
-                              <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link Visualizador</a>
-                              <div className="flex gap-2">
-                                <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Abrir no Painel</button>
-                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition" title="Deletar Projeto"><i className="fas fa-trash"></i></button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {totalPaginas > 1 && (
-                      <div className="flex justify-center items-center gap-4 mt-8 pt-6">
-                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm"><i className="fas fa-chevron-left"></i> Voltar</button>
-                        <span className="text-xs font-black text-slate-500 tracking-widest uppercase bg-white px-4 py-2 rounded-lg border border-slate-200">Página {paginaAtual} de {totalPaginas}</span>
-                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm">Próxima <i className="fas fa-chevron-right ml-1"></i></button>
-                      </div>
-                    )}
-                  </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -23,26 +23,27 @@ export async function POST(req: Request) {
     }
 
     const instrucaoImagem = temImagem 
-        ? "\n🚨 ATENÇÃO MÁXIMA: O usuário anexou uma imagem ou roteiro como base. VOCÊ DEVE EXTRAIR RIGOROSAMENTE AS INFORMAÇÕES E GERAR O CONTEÚDO BASEADO NELA." 
+        ? "\n🚨 ATENÇÃO MÁXIMA E ABSOLUTA: O usuário anexou uma imagem de referência visual. VOCÊ DEVE COPIAR FIELMENTE AS CORES, A PALETA, O TOM E O ESTILO VISUAL DESSA IMAGEM PARA TODO O EBOOK. Extraia também o tema central da imagem para estruturar os capítulos." 
         : "";
 
     let regrasObrigatorias = "";
     const regraImagens = `
 === SISTEMA DE MÍDIA PROFISSIONAL EXCLUSIVO (UNSPLASH API) ===
 🚨 REGRA ABSOLUTA: Use a sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
-🚨 RESTRIÇÃO DE ESTILO: Utilize APENAS fotografia humana realista. É estritamente PROIBIDO usar desenhos, gráficos animados, elementos sci-fi ou imagens de tecnologia. Busque apenas 'realistic human photography'.
+🚨 RESTRIÇÃO DE ESTILO: Utilize APENAS fotografia humana realista. É estritamente PROIBIDO usar desenhos, gráficos animados ou elementos sci-fi.
 Tamanhos:
-- 1280x720 (Paisagem): Para fundos ou imagens de topo de página.
-- 800x1200 (Retrato): Para pessoas ou capas.
+- 1280x720 (Paisagem): Para fundos ou imagens de topo.
+- 800x1200 (Retrato): Para fotos de pessoas, capas ou retratos conceituais.
 `;
 
     if (isSiteRefinement) {
         regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML estruturado.`;
     } else if (isElementRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado. Mantenha IDs originais.`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado.`;
     } else if (isEbook) {
         const formatoLivro = formato || 'a4'; 
-        
+        const estiloEbookEscolhido = estiloCapitulo || 'exclusiva';
+
         let widthStr = '210mm'; let heightStr = '297mm';
         if (formatoLivro === '14x21') { widthStr = '140mm'; heightStr = '210mm'; }
         if (formatoLivro === '15x21') { widthStr = '150mm'; heightStr = '210mm'; }
@@ -56,60 +57,48 @@ Tamanhos:
 .normal-page::before { content: ""; position: absolute; top: 6.5mm; bottom: 6.5mm; left: 7.5mm; right: 7.5mm; border: 0.5px solid rgba(8, 12, 22, 0.15); pointer-events: none; z-index: 10; }
 .page-header { position: absolute; top: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 10pt; color: var(--primary-color); border-bottom: 1px solid var(--secondary-color); padding-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; z-index: 20; }
 .page-footer { position: absolute; bottom: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 10pt; color: var(--primary-color); border-top: 1px solid var(--secondary-color); padding-top: 5px; z-index: 20; }
-
-/* REGRA DE ESPAÇAMENTO: Exatamente uma linha entre títulos e parágrafos */
 h1, h2, h3, h4 { font-family: var(--font-heading); color: var(--primary-color); margin-top: 0; margin-bottom: 1.5rem !important; }
-p { font-size: 12.5pt; line-height: 1.5; text-align: justify; text-indent: 25px; margin-top: 0 !important; margin-bottom: 15px; color: var(--text-color); }
-blockquote.quote { font-size: 12pt; font-style: italic; font-family: var(--font-heading); border-left: 5px solid var(--secondary-color); background: rgba(29, 92, 150, 0.05); padding: 12px 18px; margin: 15px 0 20px 0; color: var(--primary-color); }
+p { font-size: 12pt !important; line-height: 1.5; text-align: justify; text-indent: 25px; margin-top: 0 !important; margin-bottom: 15px; color: var(--text-color); }
+img { max-width: 100%; height: auto; border-radius: 8px; }
+blockquote.quote { font-size: 11.5pt; font-style: italic; font-family: var(--font-heading); border-left: 5px solid var(--secondary-color); background: rgba(29, 92, 150, 0.05); padding: 12px 18px; margin: 15px 0 20px 0; color: var(--primary-color); }
 
-/* ESTILO 1: CAPA DE CAPÍTULO EXCLUSIVA ESCURA */
-.chapter-cover-exclusive { background-color: #0b1120 !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #ffffff; padding: 0 !important;}
+/* ESTILOS DE CAPÍTULO DINÂMICOS CONFORME SUA ESCOLHA NO PAINEL */
+.chapter-cover-exclusive { background-color: #0b1120 !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #ffffff; padding: 20mm !important; }
 .chapter-cover-exclusive .chapter-number { font-family: var(--font-body); font-size: 14pt; letter-spacing: 5px; text-transform: uppercase; color: #3b82f6; margin-bottom: 20px; font-weight: 700; }
-.chapter-cover-exclusive .chapter-title { font-family: var(--font-heading); font-size: 42pt; color: #ffffff; line-height: 1.2; max-width: 85%; margin: 0 auto; font-weight: 700; }
+.chapter-cover-exclusive .chapter-title { font-family: var(--font-heading); font-size: 38pt; color: #ffffff; line-height: 1.2; max-width: 90%; margin: 0 auto; font-weight: 700; }
 
-/* ESTILO 2: CAPÍTULO COM TÍTULO E IMAGEM ABAIXO NA MESMA PÁGINA */
-.chapter-inline-title { font-family: var(--font-heading); font-size: 32pt; color: var(--primary-color); margin-bottom: 1.5rem !important; text-align: left; font-weight: 700; line-height: 1.1; }
-.chapter-hero-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.chapter-inline-container { padding: 22mm 20mm 28mm 20mm; display: flex; flex-direction: column; }
+.chapter-inline-title { font-family: var(--font-heading); font-size: 26pt; color: var(--primary-color); margin-bottom: 15px !important; text-align: left; font-weight: 700; }
+.chapter-hero-image { width: 100%; height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
 @page { size: ${formatoLivro === 'a4' ? 'A4 portrait' : widthStr + ' ' + heightStr}; margin: 0; }
 @media print { html, body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; display: block !important; width: ${widthStr} !important; height: auto !important; } #meu-ebook { display: block !important; gap: 0 !important; padding: 0 !important; } .page-container { width: ${widthStr} !important; height: ${heightStr} !important; box-sizing: border-box !important; margin: 0 !important; page-break-after: always !important; border: none !important; box-shadow: none !important; position: relative !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; } }
 </style>`;
 
-        let regraDeLayoutCapitulo = "";
-        if (estiloCapitulo === 'exclusiva') {
-            regraDeLayoutCapitulo = `
-- PARA CADA CAPÍTULO, crie UMA PÁGINA EXCLUSIVA usando EXATAMENTE este HTML:
-<div class="page-container chapter-cover-exclusive" id="cap1">
-    <span class="chapter-number">Capítulo 1</span>
-    <h1 class="chapter-title">Título do Capítulo</h1>
-</div>
-- Na página seguinte, inicie o texto com a classe <div class="page-container normal-page">.`;
-        } else if (estiloCapitulo === 'imagem_abaixo') {
-            regraDeLayoutCapitulo = `
-- PARA CADA CAPÍTULO, inicie o texto diretamente na página usando EXATAMENTE este HTML:
-<div class="page-container normal-page" id="cap1">
-    <h1 class="chapter-inline-title">Capítulo 1: Título</h1>
-    <img src="[UNSPLASH: 1280x720: keyword_do_capitulo]" class="chapter-hero-image" alt="Capa Capítulo" />
-    <p>Início do texto do capítulo...</p>
-</div>`;
+        let instrucaoEstiloCapitulo = "";
+        if (estiloEbookEscolhido === 'exclusiva') {
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página exclusiva escura (<div class='page-container chapter-cover-exclusive'>) para o título do capítulo, e o texto na página seguinte.";
+        } else if (estiloEbookEscolhido === 'imagem_abaixo') {
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Coloque o Título do Capítulo e logo abaixo uma imagem gerada por IA (<img src='[UNSPLASH: 1280x720: keyword]' class='chapter-hero-image'>) na mesma página de início do texto.";
+        } else if (estiloEbookEscolhido === 'fundo_total') {
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página de capa de capítulo exclusiva com uma imagem de fundo total em marca d'água escura e o título centralizado.";
         } else {
-            regraDeLayoutCapitulo = `Alterne entre criar páginas exclusivas de capítulo (<div class="page-container chapter-cover-exclusive">) e páginas com título e imagem integrados (<h1 class="chapter-inline-title"> com <img class="chapter-hero-image">).`;
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Alterne entre página exclusiva de título com ícone e páginas com imagem abaixo do título.";
         }
 
         regrasObrigatorias = `
-=== REGRA DE OURO 1: ARQUITETURA DE EBOOK LITERÁRIO ===
+=== REGRA DE OURO: ARQUITETURA DE EBOOK LITERÁRIO PREMIUM ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
-1. OBRIGATÓRIO: Inicie o código HTML com o bloco <style> fornecido.
+1. OBRIGATÓRIO: Inicie o código HTML com o bloco <style> exato fornecido abaixo:
 ${cssEbook}
 
-2. ESTRUTURA NARRATIVA (MUITO IMPORTANTE):
-- O CAPÍTULO 1 DEVE conter ESTRITAMENTE toda a narrativa biográfica ou a história principal. 
-- Os Capítulos subsequentes devem focar exclusivamente em dicas, ensinamentos ou conteúdo complementar.
+2. DIRETRIZ DE LAYOUT DE CAPÍTULO SELECIONADA PELO USUÁRIO:
+${instrucaoEstiloCapitulo}
 
-3. ESTRUTURA VISUAL:
+3. DIRETRIZ DE ESTRUTURA:
 - Envolva todas as páginas na tag <div id="meu-ebook">.
-- O texto do miolo deve usar: <div class="page-container normal-page">
-${regraDeLayoutCapitulo}
+- Garanta que todos os parágrafos tenham o tamanho de fonte padronizado em 12pt.
+- Crie capítulos estruturados, densos e bem divididos.
 
 ${instrucaoImagem}
 ${regraImagens}
@@ -119,7 +108,6 @@ ${regraImagens}
 === REGRA DE OURO: ARQUITETURA DE SLIDES 16:9 ===
 Retorne EXCLUSIVAMENTE um objeto JSON contendo a chave "codigo_html".
 - Cada slide DEVE ser uma tag <section> com as seguintes classes: "w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center shrink-0 relative bg-white".
-- OBRIGATÓRIO: Force o espaçamento de UMA LINHA inteira entre títulos e parágrafos ('mb-4' ou 'mb-6').
 ${instrucaoImagem}
 ${regraImagens}
 `;
