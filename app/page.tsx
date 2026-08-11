@@ -643,7 +643,7 @@ export default function Home() {
   const [corSelecionada, setCorSelecionada] = useState('auto');
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
-  
+  const [textEngine, setTextEngine] = useState<'gemini' | 'grok'>('gemini');
   const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
   const [aiSearchType, setAiSearchType] = useState('realista');
   
@@ -1756,6 +1756,13 @@ export default function Home() {
                                               <option value="agressivo">Venda de Palco (Alto Impacto)</option>
                                               <option value="terapia">Acolhedor e Acadêmico</option>
                                           </select>
+                                          <div className="pt-2 border-t border-slate-100">
+    <label className="input-label">Motor de Texto (IA)</label>
+    <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
+        <option value="gemini">Gemini (Qualidade Profunda)</option>
+        <option value="grok">Groq (Rápido e Criativo)</option>
+    </select>
+</div>
                                       </div>
                                   </div>
                               </div>
