@@ -27,7 +27,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         elSelecionado = targetEl; elSelecionado.style.outline = '3px solid #4f46e5'; elSelecionado.style.outlineOffset = '-3px';
         if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
         let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS'].includes(elSelecionado.tagName);
+        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS', 'PAGE-CONTAINER'].some(t => elSelecionado.tagName === t || elSelecionado.classList.contains(t.toLowerCase()));
         let bloqueiaTexto = isContainer && isNavOrSection;
         let compStyle = window.getComputedStyle(elSelecionado); let isImg = elSelecionado.tagName === 'IMG';
         let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
@@ -64,14 +64,14 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (event.data.type === 'DELETE_ELEMENT') { let el = document.getElementById(event.data.id); if(el) { el.remove(); elSelecionado = null; sendCleanHtml(); } }
         if (event.data.type === 'MOVE_UP') { let el = document.getElementById(event.data.id); if(el && el.previousElementSibling) { el.parentNode.insertBefore(el, el.previousElementSibling); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); sendCleanHtml(); } }
         if (event.data.type === 'MOVE_DOWN') { let el = document.getElementById(event.data.id); if(el && el.nextElementSibling) { el.parentNode.insertBefore(el.nextElementSibling, el); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); sendCleanHtml(); } }
-        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') { let el = document.getElementById(event.data.id); if(el) { let sec = el.closest('section, header, footer') || el; if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) { sec.parentNode.insertBefore(sec, sec.previousElementSibling); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) { sec.parentNode.insertBefore(sec.nextElementSibling, sec); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } sendCleanHtml(); } }
+        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') { let el = document.getElementById(event.data.id); if(el) { let sec = el.closest('section, header, footer, .page-container') || el; if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) { sec.parentNode.insertBefore(sec, sec.previousElementSibling); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) { sec.parentNode.insertBefore(sec.nextElementSibling, sec); sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); } sendCleanHtml(); } }
         if (event.data.type === 'REVERSE_FLEX') { let el = document.getElementById(event.data.id); if(el) { let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div')); if(target) { if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) { target.classList.remove('md:flex-row-reverse', 'flex-row-reverse'); target.classList.add('md:flex-row'); } else { target.classList.remove('md:flex-row', 'flex-row'); target.classList.add('md:flex-row-reverse'); } sendCleanHtml(); } } }
         if (event.data.type === 'DUPLICATE_ELEMENT') { let el = document.getElementById(event.data.id); if(el) { let clone = el.cloneNode(true); clone.id = 'node_' + Math.random().toString(36).substr(2,9); clone.querySelectorAll('[id]').forEach(child => { child.id = 'node_' + Math.random().toString(36).substr(2,9); }); clone.style.outline = ''; clone.style.outlineOffset = ''; el.parentNode.insertBefore(clone, el.nextSibling); sendCleanHtml(); } }
         if (event.data.type === 'ADD_ELEMENT') {
             let el = document.getElementById(event.data.id);
             if(el) {
                 let newHtml = ''; let newId = 'node_' + Math.random().toString(36).substr(2,9);
-                if(event.data.elementType === 'image') newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
+                if(event.data.elementType === 'image') newHtml = '<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 else if(event.data.elementType === 'text') newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu projeto.</p>';
                 else if(event.data.elementType === 'button') newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV', 'PAGE-CONTAINER'].some(t => el.tagName === t || el.classList.contains(t.toLowerCase()));
@@ -80,7 +80,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             }
         }
         if (event.data.type === 'INJECT_BLOCK') {
-            let el = document.getElementById(event.data.id); let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
+            let el = document.getElementById(event.data.id); let targetEl = el ? (el.closest('section, header, footer, .page-container') || el) : document.body;
             let tempDiv = document.createElement('div'); tempDiv.innerHTML = event.data.html; let newBlock = tempDiv.firstElementChild;
             newBlock.querySelectorAll('*').forEach(child => { if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9); });
             newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
@@ -91,7 +91,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (event.data.type === 'UPDATE_FONT') {
             let fontName = event.data.font; let linkId = 'custom-google-font'; let fontLink = document.getElementById(linkId);
             if (!fontLink) { fontLink = document.createElement('link'); fontLink.id = linkId; fontLink.rel = 'stylesheet'; document.head.appendChild(fontLink); }
-            if (fontName !== 'sans-serif') { fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap'; document.body.style.fontFamily = "'" + fontName + "', sans-serif"; } 
+            if (fontName !== 'sans-serif') { fontLink.href = '[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap'; document.body.style.fontFamily = "'" + fontName + "', sans-serif"; } 
             else { fontLink.href = ''; document.body.style.fontFamily = ''; }
             sendCleanHtml();
         }
@@ -179,11 +179,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
 const UI_BLOCKS = {
     faq: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-faq"><div class="max-w-4xl w-full mx-auto"><h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2><p class="text-center text-slate-600 mb-12 text-xl">Tire suas dúvidas e acompanhe a apresentação com clareza.</p><div class="space-y-4 text-left"><details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100"><summary class="font-bold text-slate-800 text-lg outline-none">Como funcionará a dinâmica?</summary><p class="mt-4 text-slate-600 text-lg">Explicaremos cada tópico detalhadamente com abertura para perguntas no final do bloco.</p></details><details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100"><summary class="font-bold text-slate-800 text-lg outline-none">O material será disponibilizado?</summary><p class="mt-4 text-slate-600 text-lg">Sim, todos os participantes receberão os slides em PDF após a sessão.</p></details></div></div></section>`,
-    garantia: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div><img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" /></div><div class="flex-1 w-full text-left"><h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2><p class="text-slate-600 leading-relaxed mb-4 text-xl">Transparência, execução tática e resultados comprovados em cada etapa do projeto.</p><p class="text-slate-600 leading-relaxed mb-8 text-xl">Nesta apresentação, demonstraremos exatamente como a teoria se traduz em impacto financeiro direto para o seu negócio, sem letras miúdas.</p><button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-xl">Acompanhe os Dados</button></div></div></section>`,
-    depoimentos: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos"><div class="max-w-6xl w-full mx-auto"><h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2><p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p><div class="grid grid-cols-3 gap-8 text-left"><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação."</p><div class="flex items-center gap-4 mt-6"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Cliente</p><p class="text-slate-400 text-sm">Empresa / Cargo</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p><div class="flex items-center gap-4 mt-6"><img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p><p class="text-slate-400 text-sm">Diretor Operacional</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p><div class="flex items-center gap-4 mt-6"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Líder do Setor</p><p class="text-slate-400 text-sm">Gerência de Vendas</p></div></div></div></div></div></section>`,
+    garantia: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div><img src="[https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80)" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" /></div><div class="flex-1 w-full text-left"><h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2><p class="text-slate-600 leading-relaxed mb-4 text-xl">Transparência, execução tática e resultados comprovados em cada etapa do projeto.</p><p class="text-slate-600 leading-relaxed mb-8 text-xl">Nesta apresentação, demonstraremos exatamente como a teoria se traduz em impacto financeiro direto para o seu negócio, sem letras miúdas.</p><button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-xl">Acompanhe os Dados</button></div></div></section>`,
+    depoimentos: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos"><div class="max-w-6xl w-full mx-auto"><h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2><p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p><div class="grid grid-cols-3 gap-8 text-left"><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Cliente</p><p class="text-slate-400 text-sm">Empresa / Cargo</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p><p class="text-slate-400 text-sm">Diretor Operacional</p></div></div></div><div class="bg-slate-800 p-8 rounded-2xl border border-slate-700"><div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div><p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p><div class="flex items-center gap-4 mt-6"><img src="[https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80](https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80)" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" /><div><p class="text-white font-bold text-lg mb-1">Líder do Setor</p><p class="text-slate-400 text-sm">Gerência de Vendas</p></div></div></div></div></div></section>`,
     precoDestaque: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-preco"><div class="max-w-4xl mx-auto text-center w-full"><h2 class="text-4xl font-bold text-slate-900 mb-4">Proposta de Valor</h2><p class="text-slate-600 mb-12 text-xl">A estruturação financeira do projeto discutido.</p><div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-12 max-w-2xl mx-auto"><div class="bg-indigo-100 text-indigo-700 font-black text-sm uppercase tracking-widest py-2 px-6 rounded-full inline-block mb-6">Investimento Único</div><h3 class="text-3xl font-black text-slate-900 mb-4">Implementação Completa</h3><p class="text-slate-500 mb-8 text-lg">Execução técnica e suporte consultivo incluso no projeto.</p><div class="text-6xl font-black text-slate-900 mb-8">R$ 5.000<span class="text-xl text-slate-500 font-normal">/escopo</span></div><ul class="text-left space-y-4 mb-10 text-slate-600 text-lg"><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Mapeamento e Diagnóstico</li><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Execução Estratégica em 4 Semanas</li><li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Relatórios de Métricas Semanais</li></ul><button class="block w-full py-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-xl">Aprovar Proposta</button></div></div></section>`,
-    autorEsq: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div><img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`,
-    autorDir: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir"><div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`
+    autorEsq: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq"><div class="max-w-6xl w-full mx-auto flex items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div><img src="[https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`,
+    autorDir: `<section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir"><div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16"><div class="flex-1 w-full relative"><div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div><img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" /></div><div class="flex-1 w-full text-left relative z-10"><p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p><h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2><p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p><p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p></div></div></section>`
 };
 
 export default function Home() {
@@ -194,6 +194,7 @@ export default function Home() {
   const SITES_POR_PAGINA = 6; 
   const [tipoProjeto, setTipoProjeto] = useState<'slides' | 'ebook'>('slides');
   const [formatoEbook, setFormatoEbook] = useState<'a4' | '14x21' | '15x21'>('a4');
+  const [estiloCapitulo, setEstiloCapitulo] = useState<'exclusiva' | 'imagem_abaixo' | 'misto'>('exclusiva');
   const [siteEditando, setSiteEditando] = useState<{id: string, slug: string, titulo: string} | null>(null);
   const [corSelecionada, setCorSelecionada] = useState('auto');
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
@@ -232,7 +233,7 @@ export default function Home() {
           : 'h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative bg-slate-900';
       const bodyBg = isEbook ? '#e5e5e5' : '#0f172a';
 
-      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<script src="https://cdn.tailwindcss.com"></script>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n<title>' + seoData.title + '</title>\n</head>\n<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n<div id="presentation-wrapper" class="' + wrapperClass + '">\n' + clean + '\n</div>\n</body>\n</html>';
+      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>\n<link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">\n<link href="[https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap](https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap)" rel="stylesheet">\n<title>' + seoData.title + '</title>\n</head>\n<body class="antialiased text-slate-800" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0; background-color: ' + bodyBg + ';">\n<div id="presentation-wrapper" class="' + wrapperClass + '">\n' + clean + '\n</div>\n</body>\n</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
@@ -400,7 +401,7 @@ export default function Home() {
     setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo...' : 'A IA está estruturando o projeto...', processing: true });
     try {
       const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
-      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement, isEbook, formato, useGrok }) });
+      const response = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: systemInstructionText, promptParts, imageStyle: 'real', dinamica: dinamicaStyle, isElementRefinement, isGeminiForced: !isElementRefinement, isEbook, formato, estiloCapitulo, useGrok }) });
       const responseText = await response.text(); let data;
       try { data = JSON.parse(responseText); } catch (err) { throw new Error("Houve um gargalo na comunicação com a IA."); }
       if (!data.success) throw new Error(data.error === 'RATE_LIMIT_EXCEEDED' ? "Limite de acessos da IA atingido. Aguarde 60 segundos." : data.error);
@@ -463,7 +464,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); } 
           else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
+          const fallback = '[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=)' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -541,24 +542,24 @@ export default function Home() {
     (window as any).baixarPPTX = async () => {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc || !doc.querySelector('section')) { (window as any).showNotification('Gere uma apresentação de slides primeiro.', 'error'); return; }
+        if (!doc || !doc.querySelector('section, .page-container')) { (window as any).showNotification('Gere o projeto primeiro.', 'error'); return; }
         (window as any).showNotification('Gerando PPTX... Aguarde alguns segundos.', 'success');
-        if (!(window as any).html2canvas) { const scriptCanvas = document.createElement('script'); scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; document.head.appendChild(scriptCanvas); }
+        if (!(window as any).html2canvas) { const scriptCanvas = document.createElement('script'); scriptCanvas.src = "[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"; document.head.appendChild(scriptCanvas); }
         if (!(window as any).PptxGenJS) {
-            const scriptZip = document.createElement('script'); scriptZip.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"; document.head.appendChild(scriptZip);
-            const scriptPptx = document.createElement('script'); scriptPptx.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"; document.head.appendChild(scriptPptx);
+            const scriptZip = document.createElement('script'); scriptZip.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js)"; document.head.appendChild(scriptZip);
+            const scriptPptx = document.createElement('script'); scriptPptx.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js)"; document.head.appendChild(scriptPptx);
         }
         setTimeout(async () => {
             try {
-                const sections = doc.querySelectorAll('section'); const pptx = new (window as any).PptxGenJS(); pptx.layout = 'LAYOUT_16x9';
+                const sections = doc.querySelectorAll('section, .page-container'); const pptx = new (window as any).PptxGenJS(); pptx.layout = 'LAYOUT_16x9';
                 for (let i = 0; i < sections.length; i++) {
                     const slideEl = sections[i] as HTMLElement; const originalOutline = slideEl.style.outline; slideEl.style.outline = 'none'; 
                     const canvas = await (window as any).html2canvas(slideEl, { scale: 2, useCORS: true });
                     const imgData = canvas.toDataURL('image/jpeg', 0.8); slideEl.style.outline = originalOutline;
                     const slide = pptx.addSlide(); slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
                 }
-                const nomeArquivo = siteEditando ? siteEditando.slug : 'Minha_Apresentacao';
-                pptx.writeFile({ fileName: nomeArquivo + '.pptx' }); (window as any).showNotification('Download do PPTX concluído! Pode abrir no Google Slides.', 'success');
+                const nomeArquivo = siteEditando ? siteEditando.slug : 'Meu_Projeto';
+                pptx.writeFile({ fileName: nomeArquivo + '.pptx' }); (window as any).showNotification('Download do PPTX concluído!', 'success');
             } catch (err) { console.error(err); (window as any).showNotification('Erro na conversão. Tente exportar em PDF.', 'error'); }
         }, 1500);
     };
@@ -585,7 +586,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -833,10 +834,17 @@ export default function Home() {
                                   {tipoProjeto === 'ebook' && (
                                       <div className="animate-[fadeIn_0.2s_ease] mt-3 pt-3 border-t border-indigo-100/50">
                                           <label className="input-label text-indigo-800">Formato de Saída (Impressão/PDF)</label>
-                                          <select value={formatoEbook} onChange={(e) => setFormatoEbook(e.target.value as any)} className="input-standard font-bold text-slate-700 border-indigo-200">
+                                          <select value={formatoEbook} onChange={(e) => setFormatoEbook(e.target.value as any)} className="input-standard font-bold text-slate-700 border-indigo-200 mb-3">
                                               <option value="a4">A4 Digital (Com Capa Cheia)</option>
                                               <option value="14x21">Livro 14x21cm (Folha de Rosto)</option>
                                               <option value="15x21">Livro 15x21cm (Folha de Rosto)</option>
+                                          </select>
+                                          
+                                          <label className="input-label text-indigo-800">Estilo de Capítulo</label>
+                                          <select value={estiloCapitulo} onChange={(e) => setEstiloCapitulo(e.target.value as any)} className="input-standard font-bold text-slate-700 border-indigo-200">
+                                              <option value="exclusiva">Página Exclusiva Escura (Igual Livro)</option>
+                                              <option value="imagem_abaixo">Título + Imagem IA na mesma página</option>
+                                              <option value="misto">Misto (Alternar os dois)</option>
                                           </select>
                                       </div>
                                   )}
@@ -917,126 +925,6 @@ export default function Home() {
               )}
           </div>
       </div>
-
-      {/* INICIO DO PAINEL DIREITO QUE TINHA SUMIDO */}
-      <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
-          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
-              <div className="flex items-center gap-3 md:gap-5">
-                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-xs bg-white text-indigo-700 shadow-sm transition">Ver Visual</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-xs text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
-                  </div>
-                  
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Desktop"><i className="fas fa-desktop text-xs"></i></button>
-                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
-                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
-                  </div>
-
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"><i className="fas fa-file-import"></i> Importar HTML</button>
-                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm"><i className="fas fa-cog"></i> Ajustes</button>
-                  
-                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
-              </div>
-
-              <div className="flex items-center gap-3 md:gap-4">
-                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Meus Projetos</button>
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  
-                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
-                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
-                      {tipoProjeto === 'slides' && (
-                          <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
-                      )}
-                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
-                  </div>
-                  
-                  {siteEditando ? (
-                      <div className="flex gap-2">
-                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
-                      </div>
-                  ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
-                  )}
-              </div>
-          </div>
-          
-          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar">
-              {modoInspetor && (
-                  <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
-                      <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar!
-                  </div>
-              )}
-              
-              <div className={'mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white ' + (modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'border border-slate-300') + ' ' + (deviceView === 'mobile' ? 'w-[400px] h-[711px] shrink-0' : deviceView === 'tablet' ? 'w-[800px] h-full shrink-0' : 'aspect-video w-full max-w-[1280px]')}>
-                  {modoInspetor && (
-                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
-                          <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Projeto</div>
-                      </div>
-                  )}
-                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin allow-modals" title="Navegador do Site"></iframe>
-                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
-                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
-                          onBlur={(e) => {
-                              const newHtml = e.target.value; const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
-                              setHistoricoCodigo(prev => { if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev; return [...prev, newHtml]; });
-                          }}
-                      ></textarea>
-                  </div>
-              </div>
-          </div>
-      </div>
-      
-      {modalMeusSitesAberto && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Projetos Salvos</h2>
-              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
-            </div>
-            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
-              {carregandoSites ? <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando...</p></div> : listaSites.length === 0 ? <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Nenhum projeto salvo.</p></div> : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {sitesAtuais.map((site) => {
-                        const linkUrl = window.location.origin + '/' + site.slug;
-                        return (
-                          <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
-                            <h3 className="font-black text-base text-slate-800 mb-3 truncate group-hover:text-indigo-700 transition-colors">{site.titulo}</h3>
-                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
-                                <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
-                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
-                            </div>
-                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
-                              <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link</a>
-                              <div className="flex gap-2">
-                                <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Editar</button>
-                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition"><i className="fas fa-trash"></i></button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {totalPaginas > 1 && (
-                      <div className="flex justify-center items-center gap-4 mt-8 pt-6">
-                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm"><i className="fas fa-chevron-left"></i> Voltar</button>
-                        <span className="text-xs font-black text-slate-500 tracking-widest uppercase bg-white px-4 py-2 rounded-lg border border-slate-200">Página {paginaAtual} de {totalPaginas}</span>
-                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm">Próxima <i className="fas fa-chevron-right ml-1"></i></button>
-                      </div>
-                    )}
-                  </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
