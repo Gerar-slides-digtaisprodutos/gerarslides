@@ -50,13 +50,12 @@ ${regraImagens}
     let htmlCode = '';
     let provedorTextoUsado = '';
 
-    if (useGrok) {
+    // LÊ A CHAVE TANTO COM 'Q' QUANTO COM 'K'
+    const chaveGroq = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
+
+    if (useGrok && chaveGroq) {
         provedorTextoUsado = 'Groq (Llama 3.3)';
-        const apiKey = process.env.GROQ_API_KEY;
-        
-        if (!apiKey) {
-            throw new Error("Chave GROQ_API_KEY não encontrada nas variáveis de ambiente.");
-        }
+        const apiKey = chaveGroq;
 
         const url = "https://api.groq.com/openai/v1/chat/completions";
         const model = "llama-3.3-70b-versatile";
