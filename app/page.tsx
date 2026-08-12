@@ -889,13 +889,17 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
-    alert("Botão clicado com sucesso!"); // Se aparecer este alerta, o clique está funcionando perfeitamente!
+    // Força a abertura do modal sem esperar nada do banco primeiro
     setModalMeusSitesAberto(true);
-    setCarregandoSites(true);
     
+    // Debug: Verifica se o estado mudou
+    console.log("Modal aberto!");
+    
+    setCarregandoSites(true);
     const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session) { 
-        alert("Sua sessão do Supabase expirou. Faça login novamente.");
+        alert("Sua sessão do Supabase expirou.");
         setCarregandoSites(false);
         return; 
     }
@@ -909,7 +913,6 @@ export default function Home() {
         alert("Erro no Banco: " + error.message); 
     } else { 
         setListaSites(data || []); 
-        setPaginaAtual(1); 
     }
     setCarregandoSites(false);
   };
