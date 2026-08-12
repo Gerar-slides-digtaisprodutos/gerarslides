@@ -496,41 +496,6 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 </script>`;
 
 const UI_BLOCKS = {
-    faq: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-faq">
-        <div class="max-w-4xl w-full mx-auto">
-            <h2 class="text-4xl font-bold text-center text-slate-900 mb-4">Perguntas Frequentes</h2>
-            <p class="text-center text-slate-600 mb-12 text-xl">Tire suas dúvidas e acompanhe a apresentação com clareza.</p>
-            
-            <div class="space-y-4 text-left">
-                <details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100">
-                    <summary class="font-bold text-slate-800 text-lg outline-none">Como funcionará a dinâmica?</summary>
-                    <p class="mt-4 text-slate-600 text-lg">Explicaremos cada tópico detalhadamente com abertura para perguntas no final do bloco.</p>
-                </details>
-                <details class="bg-white p-6 rounded-xl shadow-sm cursor-pointer border border-slate-100">
-                    <summary class="font-bold text-slate-800 text-lg outline-none">O material será disponibilizado?</summary>
-                    <p class="mt-4 text-slate-600 text-lg">Sim, todos os participantes receberão os slides em PDF após a sessão.</p>
-                </details>
-            </div>
-        </div>
-    </section>`,
-    
-    garantia: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-garantia">
-        <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
-            <div class="flex-1 w-full relative">
-                <div class="absolute inset-0 bg-emerald-500 rounded-2xl transform rotate-3 scale-105 opacity-20"></div>
-                <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?fit=crop&w=800&q=80" alt="Profissional garantindo sucesso" class="w-full h-auto rounded-2xl shadow-xl object-cover relative z-10 aspect-video" />
-            </div>
-            <div class="flex-1 w-full text-left">
-                <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">O Nosso Compromisso</h2>
-                <p class="text-slate-600 leading-relaxed mb-4 text-xl">Transparência, execução tática e resultados comprovados em cada etapa do projeto.</p>
-                <p class="text-slate-600 leading-relaxed mb-8 text-xl">Nesta apresentação, demonstraremos exatamente como a teoria se traduz em impacto financeiro direto para o seu negócio, sem letras miúdas.</p>
-                <button class="inline-block px-10 py-5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 hover:-translate-y-1 hover:bg-emerald-700 transition-all text-xl">Acompanhe os Dados</button>
-            </div>
-        </div>
-    </section>`,
-
     depoimentos: `
     <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos">
         <div class="max-w-6xl w-full mx-auto">
@@ -596,38 +561,6 @@ const UI_BLOCKS = {
                 <button class="block w-full py-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-xl">Aprovar Proposta</button>
             </div>
         </div>
-    </section>`,
-
-    autorEsq: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-esq">
-        <div class="max-w-6xl w-full mx-auto flex items-center gap-16">
-            <div class="flex-1 w-full relative">
-                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform -rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
-            </div>
-            <div class="flex-1 w-full text-left relative z-10">
-                <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
-                <h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2>
-                <p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p>
-                <p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p>
-            </div>
-        </div>
-    </section>`,
-
-    autorDir: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-white shrink-0 relative" id="slide-autor-dir">
-        <div class="max-w-6xl w-full mx-auto flex flex-row-reverse items-center gap-16">
-            <div class="flex-1 w-full relative">
-                <div class="absolute -inset-4 bg-indigo-50 rounded-2xl transform rotate-3 z-0"></div>
-                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Palestrante" class="w-full rounded-2xl shadow-xl object-cover aspect-[4/5] relative z-10 border-4 border-white" />
-            </div>
-            <div class="flex-1 w-full text-left relative z-10">
-                <p class="text-indigo-600 font-bold uppercase tracking-widest text-lg mb-2">Quem sou eu</p>
-                <h2 class="text-5xl font-black text-slate-900 mb-6">Apresentação do Autor</h2>
-                <p class="text-slate-600 mb-4 text-2xl leading-relaxed">Concentre toda a narrativa biográfica neste primeiro slide. Fale sobre quem você é, sua experiência de mercado e as credenciais que validam o conteúdo que será exposto.</p>
-                <p class="text-slate-600 text-xl leading-relaxed">Este slide estabelece a autoridade necessária para que a audiência preste atenção nos próximos dados da apresentação.</p>
-            </div>
-        </div>
     </section>`
 };
 
@@ -673,7 +606,19 @@ export default function Home() {
   const moldarApresentacaoHtml = (rawHtml: string) => {
       let clean = purificarHTML(rawHtml);
       
+      const printStyles = `<style>
+@media print {
+  @page { size: landscape; margin: 0; }
+  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
+  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }
+}
+</style>`;
+
       if (clean.toLowerCase().includes('<body')) {
+          if (!clean.includes('@media print')) {
+              clean = clean.replace('</head>', printStyles + '\n</head>');
+          }
           return clean;
       }
       
@@ -686,6 +631,7 @@ export default function Home() {
 '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
 '    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n' +
 '    <title>' + seoData.title + '</title>\n' +
+      printStyles + '\n' +
 '</head>\n' +
 '<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n' +
 '    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n' +
@@ -929,6 +875,22 @@ export default function Home() {
     } finally { setStatusApis({ texto: 'Aguardando Ação', processing: false }); }
   };
 
+  const getMegaPromptEstilo = () => {
+    const estilo = nichoEstilo;
+    if (estilo === 'premium') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita na tela.";
+    if (estilo === 'terapia') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência calma, leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
+    if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN DO SLIDE: Foco total em Conversão e Vendas de Palco. Use alto contraste, cores fortes e dados diretos ao ponto.";
+    return "DIRETRIZ DE DESIGN DO SLIDE: Apresentação limpa, moderna e altamente profissional.";
+  };
+
+  const getMegaPromptCores = () => {
+    const cor = corSelecionada;
+    if (cor === 'personalizada') return 'CORES DO SLIDE: Use ' + (document.getElementById('corFundo') as HTMLInputElement)?.value + ' como fundo principal e ' + (document.getElementById('corPrimaria') as HTMLInputElement)?.value + ' para detalhes.';
+    if (cor === 'auto') return "CORES DO SLIDE: Copie fielmente as cores da imagem que o usuário anexou para criar os slides.";
+    const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul Acadêmico', 'verde': 'Tons de Verde Corporativo', 'roxo': 'Tons de Roxo Criativo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa Suave', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
+    return 'CORES DA APRESENTAÇÃO: A paleta de cores dos slides deve ser baseada em: ' + (mapaCores[cor] || 'Cores neutras') + '.';
+  };
+
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
     if (uploadedImages.length === 0 && !content) { 
@@ -941,7 +903,7 @@ export default function Home() {
     
     if (content) { commandText += 'CONTEÚDO / TEMA:\n"""\n' + content + '\n"""\n\n'; }
     if (uploadedImages.length > 0) {
-        commandText += '\nUSE ESTA IMAGEM ANEXADA COMO BASE ABSOLUTA DO CONTEÚDO E DA IDENTIDADE.';
+        commandText += 'Use a IMAGEM ANEXADA como base de identidade visual.';
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
@@ -1027,8 +989,16 @@ export default function Home() {
   const editarSite = (site: any) => {
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
-    if (codEl) codEl.value = site.html_content;
-    if (prevEl) prevEl.srcdoc = site.html_content + SCRIPT_PREVIEW; 
+    
+    let htmlSeguro = site.html_content;
+    if (!htmlSeguro.includes('@media print')) {
+        const printStyles = `<style>\n@media print {\n  @page { size: landscape; margin: 0; }\n  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }\n  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }\n}\n</style>`;
+        htmlSeguro = htmlSeguro.replace('</head>', printStyles + '\n</head>');
+    }
+
+    if (codEl) codEl.value = htmlSeguro;
+    if (prevEl) prevEl.srcdoc = htmlSeguro + SCRIPT_PREVIEW; 
+    
     setSiteEditando({ id: site.id, slug: site.slug, titulo: site.titulo });
     setModalMeusSitesAberto(false);
   };
@@ -1117,8 +1087,8 @@ export default function Home() {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
         
-        if (!doc || !doc.querySelector('section')) {
-            (window as any).showNotification('Gere uma apresentação de slides primeiro.', 'error');
+        if (!doc || !doc.querySelector('section, .page-container')) {
+            (window as any).showNotification('Gere o projeto primeiro.', 'error');
             return;
         }
 
@@ -1140,7 +1110,7 @@ export default function Home() {
 
         setTimeout(async () => {
             try {
-                const sections = doc.querySelectorAll('section');
+                const sections = doc.querySelectorAll('section, .page-container');
                 const pptx = new (window as any).PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
 
@@ -1158,10 +1128,10 @@ export default function Home() {
                     slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
                 }
 
-                const nomeArquivo = siteEditando ? siteEditando.slug : 'Minha_Apresentacao';
+                const nomeArquivo = siteEditando ? siteEditando.slug : 'Meu_Projeto';
                 pptx.writeFile({ fileName: nomeArquivo + '.pptx' });
                 
-                (window as any).showNotification('Download do PPTX concluído! Pode abrir no Google Slides.', 'success');
+                (window as any).showNotification('Download do PPTX concluído!', 'success');
             } catch (err) {
                 console.error(err);
                 (window as any).showNotification('Erro na conversão. Tente exportar em PDF.', 'error');
@@ -1634,22 +1604,6 @@ export default function Home() {
                                   <div className="space-y-4">
                                       <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
                                           <div>
-                                              <p className="font-bold text-sm text-slate-800">Slide de FAQ</p>
-                                              <p className="text-[10px] text-slate-500">Perguntas Frequentes do Público</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('faq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Slide de Garantia</p>
-                                              <p className="text-[10px] text-slate-500">Argumentação de Risco Zero</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('garantia')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
                                               <p className="font-bold text-sm text-slate-800">Slide de Casos</p>
                                               <p className="text-[10px] text-slate-500">Exemplos e Métricas Reais</p>
                                           </div>
@@ -1663,28 +1617,12 @@ export default function Home() {
                                           </div>
                                           <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
                                       </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Capa do Palestrante (Esq)</p>
-                                              <p className="text-[10px] text-slate-500">Foto e Introdução da Autoridade</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('autorEsq')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Capa do Palestrante (Dir)</p>
-                                              <p className="text-[10px] text-slate-500">Foto e Introdução da Autoridade</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('autorDir')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
                                   </div>
 
                                   <div className="mt-8 pt-6 border-t border-slate-100">
                                       <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Alteração Global em Massa</h3>
                                       <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura da apresentação para você (ex: Trocar todas as cores, alterar fonte geral).</p>
-                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os slides no modo escuro profundo..."></textarea>
+                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os fundos no modo escuro profundo..."></textarea>
                                       <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
                                           <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar na Apresentação
                                       </button>
@@ -1807,88 +1745,6 @@ export default function Home() {
                       )}
                   </div>
               )}
-          </div>
-      </div>
-
-      <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
-          
-          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
-              <div className="flex items-center gap-3 md:gap-5">
-                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-[11px] bg-white text-indigo-700 shadow-sm transition">Ver Visual</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
-                  </div>
-                  
-                  {/* SIMULADOR DE DISPOSITIVOS */}
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="16:9 Slide Monitor"><i className="fas fa-desktop text-xs"></i></button>
-                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
-                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Vertical Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
-                  </div>
-
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-file-import"></i> Importar HTML
-                  </button>
-                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-cog"></i> Ajustes
-                  </button>
-                  
-                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-[11px] font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
-              </div>
-
-              <div className="flex items-center gap-3 md:gap-4">
-                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-[11px] px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Meus Projetos</button>
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  
-                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
-                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
-                      <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
-                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
-                  </div>
-                  
-                  {siteEditando ? (
-                      <div className="flex gap-2">
-                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg transition border border-slate-200">Cancelar</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
-                      </div>
-                  ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
-                  )}
-              </div>
-          </div>
-          
-          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar">
-              {modoInspetor && (
-                  <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
-                      <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar!
-                  </div>
-              )}
-              
-              <div className={'mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white ' + (modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'border border-slate-300') + ' ' + (deviceView === 'mobile' ? 'w-[400px] h-[711px] shrink-0' : deviceView === 'tablet' ? 'w-[800px] h-full shrink-0' : 'aspect-video w-full max-w-[1280px]')}>
-                  {modoInspetor && (
-                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
-                          <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização do Projeto</div>
-                      </div>
-                  )}
-                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin allow-modals" title="Navegador do Site"></iframe>
-                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
-                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
-                          onBlur={(e) => {
-                              const newHtml = e.target.value;
-                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
-                              setHistoricoCodigo(prev => {
-                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
-                                  return [...prev, newHtml];
-                              });
-                          }}
-                      ></textarea>
-                  </div>
-              </div>
           </div>
       </div>
     </div>
