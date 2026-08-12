@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -231,7 +230,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 if(event.data.elementType === 'image') {
                     newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 } else if(event.data.elementType === 'text') {
-                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu slide.</p>';
+                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo editável para o seu slide.</p>';
                 } else if(event.data.elementType === 'button') {
                     newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
                 }
@@ -756,7 +755,7 @@ export default function Home() {
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], isSiteRefinement: true, isGeminiForced: true })
+            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], isSiteRefinement: true, useGrok: false })
         });
         const responseText = await response.text();
         let data;
@@ -802,7 +801,6 @@ export default function Home() {
     
     let promptParts: any[] = [];
     
-    // Inclui a diretriz de estilo selecionada no comando
     let estiloPrompt = "Apresentação limpa, moderna e altamente profissional.";
     if (nichoEstilo === 'premium') estiloPrompt = "Aparência sofisticada e de alto padrão (Premium). Use muita simetria e elegância.";
     if (nichoEstilo === 'agressivo') estiloPrompt = "Foco total em Conversão e Vendas de Palco. Use alto contraste, cores fortes e dados diretos ao ponto.";
