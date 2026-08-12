@@ -4,565 +4,17 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
-// SCRIPT DO IFRAME
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
-    let modoEdicao = false;
-    let elSelecionado = null;
-
-    if (!document.getElementById('builder-core-styles')) {
-        const style = document.createElement('style');
-        style.id = 'builder-core-styles';
-        style.innerHTML = 'body.builder-editing * { cursor: crosshair !important; }';
-        document.head.appendChild(style);
-    }
-
-    function rgbToHex(rgb) {
-        if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
-        let res = rgb.match(/\\d+/g);
-        if(!res || res.length < 3) return '';
-        return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
-    }
-
-    function sendCleanHtml() {
-        let outlineAntigo = '';
-        if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
-        let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
-        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
-        window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
-    }
-
-    function selectElement(targetEl) {
-        if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML' || targetEl.id === 'presentation-wrapper') return;
-
-        if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
-        elSelecionado = targetEl;
-        elSelecionado.style.outline = '3px solid #4f46e5';
-        elSelecionado.style.outlineOffset = '-3px';
-
-        if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
-
-        let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
-        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS'].includes(elSelecionado.tagName);
-        let bloqueiaTexto = isContainer && isNavOrSection;
-
-        let compStyle = window.getComputedStyle(elSelecionado);
-        let isImg = elSelecionado.tagName === 'IMG';
-        
-        let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
-        let bgImg = elSelecionado.dataset.rawBgImage;
-        
-        if (bgImg === undefined) {
-            let rawBg = elSelecionado.style.backgroundImage || '';
-            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
-            bgImg = match ? match[1] : '';
-        }
-
-        let aspect = elSelecionado.style.aspectRatio || '';
-        let objOpacity = 1;
-        
-        if (isImg) { 
-            objOpacity = parseFloat(compStyle.opacity); 
-        } else { 
-            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
-        }
-        if (isNaN(objOpacity)) objOpacity = 1;
-
-        let tAlign = '';
-        if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
-        else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right';
-        else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
-
-        let bAlign = '';
-        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
-        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
-        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
-
-        let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
-        elSelecionado.classList.forEach(c => {
-            if(c.startsWith('px-') || c === 'w-full') paddingX = c; 
-            if(c === 'text-center' && elSelecionado.classList.contains('w-full')) paddingX += ' text-center';
-            if(c.startsWith('py-')) paddingY = c;
-            if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' ';
-            if(c === 'shadow') shadow += c + ' ';
-            if(c.startsWith('rounded')) rounded = c;
-            if(c.startsWith('border-') && !isNaN(c.split('-')[1])) borderW = c;
-            if(c === 'border') borderW = c;
-        });
-
-        let href = elSelecionado.getAttribute('href') || '';
-        if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') {
-            href = elSelecionado.parentElement.getAttribute('href') || '';
-        }
-
-        window.parent.postMessage({
-            type: 'ELEMENT_SELECTED',
-            id: elSelecionado.id,
-            tagName: elSelecionado.tagName.toLowerCase(),
-            text: elSelecionado.innerText || '',
-            src: elSelecionado.src || '',
-            href: href,
-            className: elSelecionado.className,
-            bgColor: cColor,
-            textColor: rgbToHex(compStyle.color),
-            borderColor: rgbToHex(compStyle.borderColor),
-            fontSize: parseInt(compStyle.fontSize) || 16,
-            opacity: objOpacity,
-            bgImage: bgImg,
-            imgFormat: aspect,
-            bloqueiaTexto: bloqueiaTexto,
-            textAlign: tAlign,
-            boxAlign: bAlign,
-            paddingX: paddingX.trim(),
-            paddingY: paddingY,
-            shadow: shadow.trim(),
-            rounded: rounded,
-            borderW: borderW,
-            outerHTML: elSelecionado.outerHTML
-        }, '*');
-    }
-
-    window.addEventListener('message', (event) => {
-        if(event.data.type === 'TOGGLE_EDIT_MODE') {
-            modoEdicao = event.data.value;
-            if(modoEdicao) {
-                document.body.classList.add('builder-editing');
-            } else {
-                document.body.classList.remove('builder-editing');
-                if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; elSelecionado = null; }
-                document.querySelectorAll('[data-old-outline]').forEach(el => {
-                    el.style.outline = el.dataset.oldOutline || '';
-                    el.style.outlineOffset = '';
-                    delete el.dataset.oldOutline;
-                });
-                document.querySelectorAll('*').forEach(el => {
-                    if (el.style.cursor === 'crosshair') el.style.cursor = '';
-                });
-            }
-        }
-        
-        if (event.data.type === 'SELECT_PARENT') {
-            let el = document.getElementById(event.data.id);
-            if (el && el.parentElement && el.parentElement.tagName !== 'BODY') {
-                selectElement(el.parentElement);
-            }
-        }
-
-        if (event.data.type === 'DELETE_ELEMENT') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                el.remove();
-                elSelecionado = null;
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'MOVE_UP') {
-            let el = document.getElementById(event.data.id);
-            if(el && el.previousElementSibling) {
-                el.parentNode.insertBefore(el, el.previousElementSibling);
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'MOVE_DOWN') {
-            let el = document.getElementById(event.data.id);
-            if(el && el.nextElementSibling) {
-                el.parentNode.insertBefore(el.nextElementSibling, el);
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                let sec = el.closest('section, header, footer') || el;
-                if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) {
-                    sec.parentNode.insertBefore(sec, sec.previousElementSibling);
-                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) {
-                    sec.parentNode.insertBefore(sec.nextElementSibling, sec);
-                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'REVERSE_FLEX') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
-                if(target) {
-                    if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) {
-                        target.classList.remove('md:flex-row-reverse', 'flex-row-reverse');
-                        target.classList.add('md:flex-row');
-                    } else {
-                        target.classList.remove('md:flex-row', 'flex-row');
-                        target.classList.add('md:flex-row-reverse');
-                    }
-                    sendCleanHtml();
-                }
-            }
-        }
-
-        if (event.data.type === 'DUPLICATE_ELEMENT') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                let clone = el.cloneNode(true);
-                clone.id = 'node_' + Math.random().toString(36).substr(2,9);
-                clone.querySelectorAll('[id]').forEach(child => {
-                    child.id = 'node_' + Math.random().toString(36).substr(2,9);
-                });
-                clone.style.outline = '';
-                clone.style.outlineOffset = '';
-                
-                el.parentNode.insertBefore(clone, el.nextSibling);
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'ADD_ELEMENT') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                let newHtml = '';
-                let newId = 'node_' + Math.random().toString(36).substr(2,9);
-                
-                if(event.data.elementType === 'image') {
-                    newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
-                } else if(event.data.elementType === 'text') {
-                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu slide.</p>';
-                } else if(event.data.elementType === 'button') {
-                    newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
-                }
-                
-                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
-                
-                if (isContainer) {
-                    el.insertAdjacentHTML('beforeend', newHtml);
-                } else {
-                    el.insertAdjacentHTML('afterend', newHtml);
-                }
-                sendCleanHtml();
-            }
-        }
-
-        if (event.data.type === 'INJECT_BLOCK') {
-            let el = document.getElementById(event.data.id);
-            let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
-            
-            let tempDiv = document.createElement('div');
-            tempDiv.innerHTML = event.data.html;
-            let newBlock = tempDiv.firstElementChild;
-            
-            newBlock.querySelectorAll('*').forEach(child => {
-                if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
-            });
-            newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
-
-            if (targetEl && targetEl !== document.body && targetEl.tagName !== 'HTML') {
-                targetEl.insertAdjacentElement('afterend', newBlock);
-                newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                let wrapper = document.getElementById('presentation-wrapper') || document.body;
-                wrapper.appendChild(newBlock);
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-            }
-            sendCleanHtml();
-        }
-
-        if (event.data.type === 'UPDATE_FONT') {
-            let fontName = event.data.font;
-            let linkId = 'custom-google-font';
-            let fontLink = document.getElementById(linkId);
-            
-            if (!fontLink) {
-                fontLink = document.createElement('link');
-                fontLink.id = linkId;
-                fontLink.rel = 'stylesheet';
-                document.head.appendChild(fontLink);
-            }
-            
-            if (fontName !== 'sans-serif') {
-                fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
-                document.body.style.fontFamily = "'" + fontName + "', sans-serif";
-            } else {
-                fontLink.href = '';
-                document.body.style.fontFamily = '';
-            }
-            sendCleanHtml();
-        }
-
-        if(event.data.type === 'UPDATE_ELEMENT') {
-            let el = document.getElementById(event.data.id);
-            if(el) {
-                let isImg = el.tagName === 'IMG';
-                let p = event.data.device === 'mobile' ? 'max-md:' : '';
-                let escP = p ? 'max-md\\:' : '';
-
-                if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
-                if(event.data.src !== undefined) el.src = event.data.src;
-                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
-                
-                if(event.data.fontSize !== undefined) {
-                    el.style.fontSize = ''; 
-                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
-                    if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
-                }
-                
-                if (event.data.href !== undefined) {
-                    let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
-                    if (el.tagName === 'A') {
-                        if (event.data.href.trim() === '') el.removeAttribute('href');
-                        else el.setAttribute('href', event.data.href);
-                    } else if (parentIsA) {
-                        if (event.data.href.trim() === '') el.parentElement.removeAttribute('href');
-                        else el.parentElement.setAttribute('href', event.data.href);
-                    } else if (event.data.href.trim() !== '') {
-                        let a = document.createElement('a'); a.href = event.data.href; a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
-                        if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block');
-                        el.parentNode.insertBefore(a, el); a.appendChild(el);
-                    }
-                }
-
-                if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
-                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
-                if (event.data.opacity !== undefined) {
-                    if (isImg) { el.style.opacity = event.data.opacity; } 
-                    else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
-                }
-
-                if (!isImg) {
-                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
-                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
-                    let cBgImage = el.dataset.rawBgImage;
-                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
-                    let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
-
-                    let r = 255, g = 255, b = 255;
-                    if (cBgColor.startsWith('#')) {
-                        let hex = cBgColor.replace('#', '');
-                        if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
-                        if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
-                    }
-
-                    let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')';
-                    el.style.setProperty('--tw-bg-opacity', '1');
-
-                    if (cBgImage && cBgImage !== 'none') {
-                        el.style.backgroundColor = 'transparent';
-                        el.style.backgroundImage = 'linear-gradient(' + rgbaStr + ', ' + rgbaStr + '), url(\\'' + cBgImage + '\\')';
-                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
-                    } else {
-                        el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
-                    }
-
-                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
-                    else el.classList.remove('backdrop-blur-md');
-                } else {
-                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
-                }
-
-                if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
-                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
-                }
-                if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
-                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
-                }
-                if(event.data.rounded !== undefined) {
-                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
-                    if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
-                }
-                if(event.data.shadow !== undefined) {
-                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
-                    if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
-                }
-                if(event.data.borderW !== undefined) {
-                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
-                    if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
-                }
-
-                if(event.data.textAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
-                    if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
-                }
-
-                if(event.data.boxAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
-                    if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
-                    if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
-                    if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
-                    
-                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
-                        if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
-                        if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
-                        if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
-                    }
-                }
-
-                if(event.data.animationClass !== undefined) {
-                    const animClasses = ['animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:-translate-y-2', 'hover:-translate-y-1', 'hover:shadow-2xl', 'hover:shadow-indigo-500/50', 'hover:rotate-3', 'transition-transform', 'transition-all', 'transition-shadow', 'duration-300'];
-                    el.classList.remove(...animClasses);
-                    if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
-                }
-
-                if(event.data.imgFormat !== undefined) {
-                    if (event.data.imgFormat === '') {
-                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
-                    } else {
-                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
-                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
-                    }
-                }
-                
-                if(event.data.imgRounded !== undefined) {
-                    const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
-                    el.classList.remove(...allClassesToRemove);
-                    if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
-                }
-
-                if(event.data.imgBorder !== undefined) {
-                    if (event.data.imgBorder) { el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
-                    } else { el.style.borderWidth = '0px'; el.classList.remove('shadow-xl'); }
-                }
-                if(event.data.borderColor !== undefined) el.style.borderColor = event.data.borderColor;
-
-                sendCleanHtml();
-            }
-        }
-        if(event.data.type === 'REPLACE_ELEMENT_HTML') {
-            let el = document.getElementById(event.data.id);
-            if(el) { el.outerHTML = event.data.newHtml; sendCleanHtml(); }
-        }
-    });
-
-    document.addEventListener('mouseover', (e) => {
-        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
-        e.target.dataset.oldOutline = e.target.style.outline;
-        e.target.style.outline = '2px solid #0ea5e9'; 
-        e.target.style.outlineOffset = '-2px';
-    });
-    
-    document.addEventListener('mouseout', (e) => {
-        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
-        if(e.target !== elSelecionado) { 
-            e.target.style.outline = e.target.dataset.oldOutline || ''; 
-            e.target.style.outlineOffset = '';
-        }
-    });
-
-    window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
-
-    document.addEventListener('click', (e) => {
-        let link = e.target.closest('a');
-        let btn = e.target.closest('button');
-        let form = e.target.closest('form');
-        let summary = e.target.closest('summary');
-
-        if (form && !summary && !btn) { e.preventDefault(); }
-        
-        if (modoEdicao) {
-            if (summary) {
-                setTimeout(() => selectElement(summary), 10);
-                return; 
-            }
-            e.preventDefault(); 
-            e.stopPropagation();
-            selectElement(e.target);
-            return;
-        }
-
-        if (link || btn) {
-            e.preventDefault();
-            e.stopPropagation();
-            if(link) {
-                let href = link.getAttribute('href') || '';
-                if(href.startsWith('#') && href.length > 1) {
-                    try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
-                } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
-                    let a = document.createElement('a');
-                    a.href = href;
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    a.click();
-                }
-            }
-            return;
-        }
-    }, true); 
+let modoEdicao=false;let elSelecionado=null;if(!document.getElementById('builder-core-styles')){const style=document.createElement('style');style.id='builder-core-styles';style.innerHTML='body.builder-editing * { cursor: crosshair !important; }';document.head.appendChild(style);}
+function rgbToHex(rgb){if(!rgb||rgb==='rgba(0, 0, 0, 0)'||rgb==='transparent')return '';let res=rgb.match(/\\d+/g);if(!res||res.length<3)return '';return "#"+res.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');}
+function sendCleanHtml(){let outlineAntigo='';if(elSelecionado){outlineAntigo=elSelecionado.style.outline;elSelecionado.style.outline='';}let htmlStr='<!DOCTYPE html>\\n'+document.documentElement.outerHTML;if(elSelecionado){elSelecionado.style.outline=outlineAntigo;}window.parent.postMessage({type:'HTML_SYNC',html:htmlStr},'*');}
+function selectElement(targetEl){if(targetEl.tagName==='BODY'||targetEl.tagName==='HTML'||targetEl.id==='presentation-wrapper')return;if(elSelecionado){elSelecionado.style.outline='';elSelecionado.style.outlineOffset='';}elSelecionado=targetEl;elSelecionado.style.outline='3px solid #4f46e5';elSelecionado.style.outlineOffset='-3px';if(!elSelecionado.id)elSelecionado.id='node_'+Math.random().toString(36).substr(2,9);let isContainer=Array.from(elSelecionado.children).some(child=>child.tagName!=='BR');let isNavOrSection=['SECTION','NAV','HEADER','FOOTER','UL','DIV','ARTICLE','DETAILS','PAGE-CONTAINER'].some(t=>elSelecionado.tagName===t||elSelecionado.classList.contains(t.toLowerCase()));let bloqueiaTexto=isContainer&&isNavOrSection;let compStyle=window.getComputedStyle(elSelecionado);let isImg=elSelecionado.tagName==='IMG';let cColor=elSelecionado.dataset.rawBgColor||rgbToHex(compStyle.backgroundColor);let bgImg=elSelecionado.dataset.rawBgImage;if(bgImg===undefined){let rawBg=elSelecionado.style.backgroundImage||'';let match=rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);bgImg=match?match[1]:'';}let aspect=elSelecionado.style.aspectRatio||'';let objOpacity=1;if(isImg){objOpacity=parseFloat(compStyle.opacity);}else{objOpacity=parseFloat(elSelecionado.dataset.bgOpacity);}if(isNaN(objOpacity))objOpacity=1;let tAlign='';if(elSelecionado.classList.contains('text-center'))tAlign='text-center';else if(elSelecionado.classList.contains('text-right'))tAlign='text-right';else if(elSelecionado.classList.contains('text-left'))tAlign='text-left';let bAlign='';if(elSelecionado.classList.contains('mx-auto')||elSelecionado.classList.contains('self-center')||elSelecionado.classList.contains('justify-center'))bAlign='center';else if(elSelecionado.classList.contains('ml-auto')||elSelecionado.classList.contains('self-end')||elSelecionado.classList.contains('justify-end'))bAlign='right';else if(elSelecionado.classList.contains('mr-auto')||elSelecionado.classList.contains('self-start')||elSelecionado.classList.contains('justify-start'))bAlign='left';let paddingX='',paddingY='',shadow='',rounded='',borderW='';elSelecionado.classList.forEach(c=>{if(c.startsWith('px-')||c==='w-full')paddingX=c;if(c==='text-center'&&elSelecionado.classList.contains('w-full'))paddingX+=' text-center';if(c.startsWith('py-'))paddingY=c;if(c.startsWith('shadow-')&&!c.includes('hover:'))shadow+=c+' ';if(c==='shadow')shadow+=c+' ';if(c.startsWith('rounded'))rounded=c;if(c.startsWith('border-')&&!isNaN(c.split('-')[1]))borderW=c;if(c==='border')borderW=c;});let href=elSelecionado.getAttribute('href')||'';if(!href&&elSelecionado.parentElement&&elSelecionado.parentElement.tagName==='A'){href=elSelecionado.parentElement.getAttribute('href')||'';}window.parent.postMessage({type:'ELEMENT_SELECTED',id:elSelecionado.id,tagName:elSelecionado.tagName.toLowerCase(),text:elSelecionado.innerText||'',src:elSelecionado.src||'',href:href,className:elSelecionado.className,bgColor:cColor,textColor:rgbToHex(compStyle.color),borderColor:rgbToHex(compStyle.borderColor),fontSize:parseInt(compStyle.fontSize)||16,opacity:objOpacity,bgImage:bgImg,imgFormat:aspect,bloqueiaTexto:bloqueiaTexto,textAlign:tAlign,boxAlign:bAlign,paddingX:paddingX.trim(),paddingY:paddingY,shadow:shadow.trim(),rounded:rounded,borderW:borderW,outerHTML:elSelecionado.outerHTML},'*');}
+window.addEventListener('message',(event)=>{if(event.data.type==='TOGGLE_EDIT_MODE'){modoEdicao=event.data.value;if(modoEdicao){document.body.classList.add('builder-editing');}else{document.body.classList.remove('builder-editing');if(elSelecionado){elSelecionado.style.outline='';elSelecionado.style.outlineOffset='';elSelecionado=null;}document.querySelectorAll('[data-old-outline]').forEach(el=>{el.style.outline=el.dataset.oldOutline||'';el.style.outlineOffset='';delete el.dataset.oldOutline;});document.querySelectorAll('*').forEach(el=>{if(el.style.cursor==='crosshair')el.style.cursor='';});}}if(event.data.type==='SELECT_PARENT'){let el=document.getElementById(event.data.id);if(el&&el.parentElement&&el.parentElement.tagName!=='BODY')selectElement(el.parentElement);}if(event.data.type==='DELETE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){el.remove();elSelecionado=null;sendCleanHtml();}}if(event.data.type==='MOVE_UP'){let el=document.getElementById(event.data.id);if(el&&el.previousElementSibling){el.parentNode.insertBefore(el,el.previousElementSibling);el.scrollIntoView({behavior:'smooth',block:'center'});sendCleanHtml();}}if(event.data.type==='MOVE_DOWN'){let el=document.getElementById(event.data.id);if(el&&el.nextElementSibling){el.parentNode.insertBefore(el.nextElementSibling,el);el.scrollIntoView({behavior:'smooth',block:'center'});sendCleanHtml();}}if(event.data.type==='MOVE_SECTION_UP'||event.data.type==='MOVE_SECTION_DOWN'){let el=document.getElementById(event.data.id);if(el){let sec=el.closest('section, header, footer, .page-container')||el;if(event.data.type==='MOVE_SECTION_UP'&&sec.previousElementSibling){sec.parentNode.insertBefore(sec,sec.previousElementSibling);sec.scrollIntoView({behavior:'smooth',block:'center'});}else if(event.data.type==='MOVE_SECTION_DOWN'&&sec.nextElementSibling){sec.parentNode.insertBefore(sec.nextElementSibling,sec);sec.scrollIntoView({behavior:'smooth',block:'center'});}sendCleanHtml();}}if(event.data.type==='REVERSE_FLEX'){let el=document.getElementById(event.data.id);if(el){let target=el.classList.contains('flex')?el:(el.closest('.flex')||el.closest('section > div'));if(target){if(target.classList.contains('md:flex-row-reverse')||target.classList.contains('flex-row-reverse')){target.classList.remove('md:flex-row-reverse','flex-row-reverse');target.classList.add('md:flex-row');}else{target.classList.remove('md:flex-row','flex-row');target.classList.add('md:flex-row-reverse');}sendCleanHtml();}}}if(event.data.type==='DUPLICATE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let clone=el.cloneNode(true);clone.id='node_'+Math.random().toString(36).substr(2,9);clone.querySelectorAll('[id]').forEach(child=>{child.id='node_'+Math.random().toString(36).substr(2,9);});clone.style.outline='';clone.style.outlineOffset='';el.parentNode.insertBefore(clone,el.nextSibling);sendCleanHtml();}}if(event.data.type==='ADD_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let newHtml='';let newId='node_'+Math.random().toString(36).substr(2,9);if(event.data.elementType==='image')newHtml='<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Imagem" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="'+newId+'">';else if(event.data.elementType==='text')newHtml='<p class="text-slate-600 mb-4 text-base leading-relaxed" id="'+newId+'">Novo texto editável.</p>';else if(event.data.elementType==='button')newHtml='<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="'+newId+'">Clique Aqui</a>';let isContainer=['SECTION','DIV','HEADER','FOOTER','ARTICLE','NAV','PAGE-CONTAINER'].some(t=>el.tagName===t||el.classList.contains(t.toLowerCase()));if(isContainer)el.insertAdjacentHTML('beforeend',newHtml);else el.insertAdjacentHTML('afterend',newHtml);sendCleanHtml();}}if(event.data.type==='INJECT_BLOCK'){let el=document.getElementById(event.data.id);let targetEl=el?(el.closest('section, header, footer, .page-container')||el):document.body;let tempDiv=document.createElement('div');tempDiv.innerHTML=event.data.html;let newBlock=tempDiv.firstElementChild;newBlock.querySelectorAll('*').forEach(child=>{if(child.id)child.id='node_'+Math.random().toString(36).substr(2,9);});newBlock.id='node_'+Math.random().toString(36).substr(2,9);if(targetEl&&targetEl!==document.body&&targetEl.tagName!=='HTML'){targetEl.insertAdjacentElement('afterend',newBlock);newBlock.scrollIntoView({behavior:'smooth',block:'center'});}else{let wrapper=document.getElementById('presentation-wrapper')||document.body;wrapper.appendChild(newBlock);window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});}sendCleanHtml();}if(event.data.type==='UPDATE_FONT'){let fontName=event.data.font;let linkId='custom-google-font';let fontLink=document.getElementById(linkId);if(!fontLink){fontLink=document.createElement('link');fontLink.id=linkId;fontLink.rel='stylesheet';document.head.appendChild(fontLink);}if(fontName!=='sans-serif'){fontLink.href='https://fonts.googleapis.com/css2?family='+fontName.replace(/ /g,'+')+':wght@400;500;700;900&display=swap';document.body.style.fontFamily="'"+fontName+"', sans-serif";}else{fontLink.href='';document.body.style.fontFamily='';}sendCleanHtml();}if(event.data.type==='UPDATE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let isImg=el.tagName==='IMG';let p=event.data.device==='mobile'?'max-md:':'';let escP=p?'max-md\\\\:':'';if(event.data.text!==undefined&&event.data.forceTextUpdate)el.innerText=event.data.text;if(event.data.src!==undefined)el.src=event.data.src;if(event.data.textColor!==undefined)el.style.color=event.data.textColor;if(event.data.fontSize!==undefined){el.style.fontSize='';el.className=el.className.replace(new RegExp('\\\\b'+escP+'text-\\\\[\\\\d+px\\\\]\\\\b','g'),'').trim();if(event.data.fontSize)el.classList.add(p+'text-['+event.data.fontSize+'px]');}if(event.data.href!==undefined){let parentIsA=el.parentElement&&el.parentElement.tagName==='A';if(el.tagName==='A'){if(event.data.href.trim()==='')el.removeAttribute('href');else el.setAttribute('href',event.data.href);}else if(parentIsA){if(event.data.href.trim()==='')el.parentElement.removeAttribute('href');else el.parentElement.setAttribute('href',event.data.href);}else if(event.data.href.trim()!==''){let a=document.createElement('a');a.href=event.data.href;a.className="inline-block cursor-pointer transition-all hover:opacity-90";if(el.classList.contains('w-full')||isImg)a.classList.add('w-full','block');el.parentNode.insertBefore(a,el);a.appendChild(el);}}if(event.data.bgColor!==undefined)el.dataset.rawBgColor=event.data.bgColor;if(event.data.bgImage!==undefined)el.dataset.rawBgImage=event.data.bgImage;if(event.data.opacity!==undefined){if(isImg){el.style.opacity=event.data.opacity;}else{el.dataset.bgOpacity=event.data.opacity;el.style.opacity='';}}if(!isImg){let cBgColor=el.dataset.rawBgColor||rgbToHex(window.getComputedStyle(el).backgroundColor);if(!cBgColor||cBgColor==='')cBgColor='#ffffff';let cBgImage=el.dataset.rawBgImage;if(cBgImage===undefined){let match=(el.style.backgroundImage||'').match(/url\\\\(['"]?([^'"]+)['"]?\\\\)/);cBgImage=match?match[1]:'';}let cOpacity=parseFloat(el.dataset.bgOpacity);if(isNaN(cOpacity))cOpacity=1;let r=255,g=255,b=255;if(cBgColor.startsWith('#')){let hex=cBgColor.replace('#','');if(hex.length===3)hex=hex.split('').map(x=>x+x).join('');if(hex.length===6){r=parseInt(hex.substring(0,2),16);g=parseInt(hex.substring(2,4),16);b=parseInt(hex.substring(4,6),16);}}let rgbaStr='rgba('+r+', '+g+', '+b+', '+cOpacity+')';el.style.setProperty('--tw-bg-opacity','1');if(cBgImage&&cBgImage!=='none'){el.style.backgroundColor='transparent';el.style.backgroundImage='linear-gradient('+rgbaStr+', '+rgbaStr+'), url(\\\''+cBgImage+'\\\')';el.style.backgroundSize="cover";el.style.backgroundPosition="center";el.style.backgroundRepeat="no-repeat";}else{el.style.backgroundImage="none";el.style.backgroundColor=rgbaStr;}if(cOpacity<1&&cOpacity>0)el.classList.add('backdrop-blur-md');else el.classList.remove('backdrop-blur-md');}else{if(event.data.bgColor!==undefined)el.style.backgroundColor=event.data.bgColor;}if(event.data.paddingX!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b','g'),'').trim();if(event.data.paddingX&&event.data.paddingX!=='none'){event.data.paddingX.split(' ').forEach(cls=>el.classList.add(p+cls));}}if(event.data.paddingY!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b','g'),'').trim();if(event.data.paddingY&&event.data.paddingY!=='none')el.classList.add(p+event.data.paddingY);}if(event.data.rounded!==undefined){el.className=el.className.replace(/\\\\brounded\\\\b|\\\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\\\b/g,'').trim();if(event.data.rounded&&event.data.rounded!=='none')el.classList.add(event.data.rounded);}if(event.data.shadow!==undefined){el.className=el.className.replace(/\\\\bshadow\\\\b|\\\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\\\b|\\\\bshadow-[a-z]+-500\\\\/50\\\\b/g,'').trim();if(event.data.shadow&&event.data.shadow!=='none'){event.data.shadow.split(' ').forEach(cls=>el.classList.add(cls));}}if(event.data.borderW!==undefined){el.className=el.className.replace(/\\\\bborder\\\\b|\\\\bborder-\\\\d+\\\\b/g,'').trim();if(event.data.borderW&&event.data.borderW!=='none'){el.classList.add(event.data.borderW);}}if(event.data.textAlign!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(text-left|text-center|text-right|text-justify)\\\\b','g'),'').trim();if(event.data.textAlign)el.classList.add(p+event.data.textAlign);}if(event.data.boxAlign!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b','g'),'').trim();if(event.data.boxAlign==='center')el.classList.add(p+'mx-auto',p+'self-center',p+'justify-self-center');if(event.data.boxAlign==='right')el.classList.add(p+'ml-auto',p+'self-end',p+'justify-self-end');if(event.data.boxAlign==='left')el.classList.add(p+'mr-auto',p+'self-start',p+'justify-self-start');if(window.getComputedStyle(el).display.includes('flex')||window.getComputedStyle(el).display.includes('grid')){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(justify-start|justify-center|justify-end)\\\\b','g'),'').trim();if(event.data.boxAlign==='center')el.classList.add(p+'justify-center');if(event.data.boxAlign==='right')el.classList.add(p+'justify-end');if(event.data.boxAlign==='left')el.classList.add(p+'justify-start');}}if(event.data.animationClass!==undefined){const animClasses=['animate-pulse','animate-bounce','hover:scale-105','hover:-translate-y-2','hover:-translate-y-1','hover:shadow-2xl','hover:shadow-indigo-500/50','hover:rotate-3','transition-transform','transition-all','transition-shadow','duration-300'];el.classList.remove(...animClasses);if(event.data.animationClass)event.data.animationClass.split(' ').forEach(cls=>el.classList.add(cls));}if(event.data.imgFormat!==undefined){if(event.data.imgFormat===''){el.style.aspectRatio='';el.style.height='';el.classList.remove('object-cover','w-full','h-auto');}else{el.className=el.className.replace(/\\\\bh-(full|screen|auto|min|max|fit|px|\\\\d+|\\\\[.*?\\\\])\\\\b/g,'').trim();el.style.aspectRatio=event.data.imgFormat;el.style.height='auto';el.classList.add('object-cover','w-full');}}if(event.data.imgRounded!==undefined){const allClassesToRemove=['rounded-none','rounded-sm','rounded-md','rounded-lg','rounded-xl','rounded-2xl','rounded-full','shadow-none','shadow-sm','shadow-md','shadow-lg','shadow-xl','shadow-2xl','border-2','border-4','border-8','border-white','border-indigo-500','border-emerald-500','shadow-indigo-500/50','shadow-emerald-500/50','shadow-rose-500/50'];el.classList.remove(...allClassesToRemove);if(event.data.imgRounded){event.data.imgRounded.split(' ').forEach(cls=>{if(cls)el.classList.add(cls);});}}if(event.data.imgBorder!==undefined){if(event.data.imgBorder){el.style.borderWidth='4px';el.style.borderStyle='solid';el.classList.add('shadow-xl');}else{el.style.borderWidth='0px';el.classList.remove('shadow-xl');}}if(event.data.borderColor!==undefined)el.style.borderColor=event.data.borderColor;sendCleanHtml();}}if(event.data.type==='REPLACE_ELEMENT_HTML'){let el=document.getElementById(event.data.id);if(el){el.outerHTML=event.data.newHtml;sendCleanHtml();}}});
+document.addEventListener('mouseover',(e)=>{if(!modoEdicao||e.target===document.body||e.target===document.documentElement)return;e.target.dataset.oldOutline=e.target.style.outline;e.target.style.outline='2px solid #0ea5e9';e.target.style.outlineOffset='-2px';});
+document.addEventListener('mouseout',(e)=>{if(!modoEdicao||e.target===document.body||e.target===document.documentElement)return;if(e.target!==elSelecionado){e.target.style.outline=e.target.dataset.oldOutline||'';e.target.style.outlineOffset='';}});
+window.addEventListener('submit',function(e){e.preventDefault();e.stopPropagation();},true);
+document.addEventListener('click',(e)=>{let link=e.target.closest('a');let btn=e.target.closest('button');let form=e.target.closest('form');let summary=e.target.closest('summary');if(form&&!summary&&!btn){e.preventDefault();}if(modoEdicao){if(summary){setTimeout(()=>selectElement(summary),10);return;}e.preventDefault();e.stopPropagation();selectElement(e.target);return;}if(link||btn){e.preventDefault();e.stopPropagation();if(link){let href=link.getAttribute('href')||'';if(href.startsWith('#')&&href.length>1){try{var tEl=document.querySelector(href);if(tEl)tEl.scrollIntoView({behavior:'smooth',block:'start'});}catch(err){}}else if(href&&!href.startsWith('javascript:')&&href!=='/'&&href!=='#'){let a=document.createElement('a');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.click();}}return;}},true);
 </script>`;
-
-const UI_BLOCKS = {
-    depoimentos: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-900 shrink-0 relative" id="slide-depoimentos">
-        <div class="max-w-6xl w-full mx-auto">
-            <h2 class="text-4xl font-bold text-center text-white mb-4">Casos de Sucesso</h2>
-            <p class="text-center text-slate-400 mb-12 text-xl">Exemplos reais da aplicação desta metodologia.</p>
-            
-            <div class="grid grid-cols-3 gap-8 text-left">
-                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Substitua este texto pelo relato real de um case para provar a autoridade da sua apresentação em tempo real."</p>
-                    <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
-                        <div>
-                            <p class="text-white font-bold text-lg mb-1">Nome do Cliente</p>
-                            <p class="text-slate-400 text-sm">Empresa / Cargo</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Inserir os dados verídicos e as métricas de crescimento alcançadas fortalece o argumento da palestra."</p>
-                    <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
-                        <div>
-                            <p class="text-white font-bold text-lg mb-1">Nome do Parceiro</p>
-                            <p class="text-slate-400 text-sm">Diretor Operacional</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                    <div class="text-yellow-400 mb-4 flex gap-1"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p class="text-slate-300 mb-4 text-lg leading-relaxed italic">"Deixe que os resultados falem por si mesmos através da voz daqueles que confiaram na solução."</p>
-                    <div class="flex items-center gap-4 mt-6">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?fit=crop&w=150&q=80" alt="Cliente" class="w-16 h-16 rounded-full object-cover border-2 border-slate-600" />
-                        <div>
-                            <p class="text-white font-bold text-lg mb-1">Líder do Setor</p>
-                            <p class="text-slate-400 text-sm">Gerência de Vendas</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>`,
-
-    precoDestaque: `
-    <section class="w-full min-h-screen flex flex-col justify-center items-center p-12 snap-center bg-slate-50 shrink-0 relative" id="slide-preco">
-        <div class="max-w-4xl mx-auto text-center w-full">
-            <h2 class="text-4xl font-bold text-slate-900 mb-4">Proposta de Valor</h2>
-            <p class="text-slate-600 mb-12 text-xl">A estruturação financeira do projeto discutido.</p>
-            
-            <div class="bg-white rounded-3xl shadow-xl border border-indigo-100 p-12 max-w-2xl mx-auto">
-                <div class="bg-indigo-100 text-indigo-700 font-black text-sm uppercase tracking-widest py-2 px-6 rounded-full inline-block mb-6">Investimento Único</div>
-                <h3 class="text-3xl font-black text-slate-900 mb-4">Implementação Completa</h3>
-                <p class="text-slate-500 mb-8 text-lg">Execução técnica e suporte consultivo incluso no projeto.</p>
-                <div class="text-6xl font-black text-slate-900 mb-8">R$ 5.000<span class="text-xl text-slate-500 font-normal">/escopo</span></div>
-                
-                <ul class="text-left space-y-4 mb-10 text-slate-600 text-lg">
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Mapeamento e Diagnóstico</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Execução Estratégica em 4 Semanas</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check-circle text-emerald-500 text-2xl"></i> Relatórios de Métricas Semanais</li>
-                </ul>
-                
-                <button class="block w-full py-5 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:-translate-y-1 transition-all text-xl">Aprovar Proposta</button>
-            </div>
-        </div>
-    </section>`
-};
 
 export default function Home() {
   const [modalMeusSitesAberto, setModalMeusSitesAberto] = useState(false);
@@ -575,7 +27,6 @@ export default function Home() {
   const [uploadedImages, setUploadedImages] = useState<{ mimeType: string; data: string }[]>([]);
   const [historicoCodigo, setHistoricoCodigo] = useState<string[]>([]);
   const [textEngine, setTextEngine] = useState<'gemini' | 'grok'>('gemini');
-  const [abaAtiva, setAbaAtiva] = useState<'gerar' | 'blocos'>('gerar');
   const [aiSearchType, setAiSearchType] = useState('realista');
   const [modoInspetor, setModoInspetor] = useState(false);
   const [elementoSelecionado, setElementoSelecionado] = useState<any>(null);
@@ -605,40 +56,12 @@ export default function Home() {
 
   const moldarApresentacaoHtml = (rawHtml: string) => {
       let clean = purificarHTML(rawHtml);
-      
-      const printStyles = `<style>
-@media print {
-  @page { size: landscape; margin: 0; }
-  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
-  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }
-}
-</style>`;
-
+      const printStyles = `<style>\n@media print {\n  @page { size: landscape; margin: 0; }\n  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }\n  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }\n}\n</style>`;
       if (clean.toLowerCase().includes('<body')) {
-          if (!clean.includes('@media print')) {
-              clean = clean.replace('</head>', printStyles + '\n</head>');
-          }
+          if (!clean.includes('@media print')) { clean = clean.replace('</head>', printStyles + '\n</head>'); }
           return clean;
       }
-      
-      return '<!DOCTYPE html>\n' +
-'<html lang="pt-BR" class="scroll-smooth">\n' +
-'<head>\n' +
-'    <meta charset="UTF-8">\n' +
-'    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'    <script src="https://cdn.tailwindcss.com"></script>\n' +
-'    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
-'    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n' +
-'    <title>' + seoData.title + '</title>\n' +
-      printStyles + '\n' +
-'</head>\n' +
-'<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n' +
-'    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n' +
-        clean + '\n' +
-'    </div>\n' +
-'</body>\n' +
-'</html>';
+      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n    <title>' + seoData.title + '</title>\n' + printStyles + '\n</head>\n<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n        ' + clean + '\n    </div>\n</body>\n</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
@@ -731,13 +154,6 @@ export default function Home() {
       iframe.contentWindow?.postMessage({ type: 'REVERSE_FLEX', id: elementoSelecionado.id }, '*');
   };
 
-  const injetarBlocoPronto = (tipo: keyof typeof UI_BLOCKS) => {
-      const htmlBloco = UI_BLOCKS[tipo];
-      const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'INJECT_BLOCK', id: elementoSelecionado?.id, html: htmlBloco }, '*');
-      (window as any).showNotification("Slide inserido com sucesso!", "success");
-  };
-
   const aplicarFonte = (fonte: string) => {
       setFontFamily(fonte);
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -748,29 +164,14 @@ export default function Home() {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       if(codEl) {
           let htmlAtual = codEl.value;
-          
-          if(htmlAtual.includes('<title>')) {
-              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>');
-          } else {
-              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>');
-          }
-
-          if(htmlAtual.includes('name="description"')) {
-              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">');
-          } else {
-              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">');
-          }
-
+          if(htmlAtual.includes('<title>')) { htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>'); } 
+          else { htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>'); }
+          if(htmlAtual.includes('name="description"')) { htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">'); } 
+          else { htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">'); }
           htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
           htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
-
-          if(seoData.headScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>');
-          }
-          if(seoData.bodyScripts.trim()) {
-              htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>');
-          }
-
+          if(seoData.headScripts.trim()) { htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>'); }
+          if(seoData.bodyScripts.trim()) { htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>'); }
           codEl.value = htmlAtual;
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           if (iframe) iframe.srcdoc = htmlAtual + SCRIPT_PREVIEW;
@@ -780,10 +181,7 @@ export default function Home() {
   };
 
   const desfazerCodigo = () => {
-    if (historicoCodigo.length === 0) {
-        (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
-        return;
-    }
+    if (historicoCodigo.length === 0) { (window as any).showNotification("Nenhuma alteração para desfazer.", "error"); return; }
     const novoHistorico = [...historicoCodigo];
     const estadoAnterior = novoHistorico.pop();
     setHistoricoCodigo(novoHistorico);
@@ -798,7 +196,6 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = moldarApresentacaoHtml(codigoExterno);
-
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
@@ -873,22 +270,6 @@ export default function Home() {
       if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.includes('RATE_LIMIT')) { errorMsg = "Servidor ocupado. Aguarde um minuto."; }
       (window as any).showNotification(errorMsg, 'error'); return null;
     } finally { setStatusApis({ texto: 'Aguardando Ação', processing: false }); }
-  };
-
-  const getMegaPromptEstilo = () => {
-    const estilo = nichoEstilo;
-    if (estilo === 'premium') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência sofisticada e de alto padrão (Premium). Use fontes serifadas elegantes e simetria perfeita na tela.";
-    if (estilo === 'terapia') return "DIRETRIZ DE DESIGN DO SLIDE: Crie uma aparência calma, leve (Saúde mental). Use muito espaço em branco, bordas suaves e cores que transmitem paz.";
-    if (estilo === 'agressivo') return "DIRETRIZ DE DESIGN DO SLIDE: Foco total em Conversão e Vendas de Palco. Use alto contraste, cores fortes e dados diretos ao ponto.";
-    return "DIRETRIZ DE DESIGN DO SLIDE: Apresentação limpa, moderna e altamente profissional.";
-  };
-
-  const getMegaPromptCores = () => {
-    const cor = corSelecionada;
-    if (cor === 'personalizada') return 'CORES DO SLIDE: Use ' + (document.getElementById('corFundo') as HTMLInputElement)?.value + ' como fundo principal e ' + (document.getElementById('corPrimaria') as HTMLInputElement)?.value + ' para detalhes.';
-    if (cor === 'auto') return "CORES DO SLIDE: Copie fielmente as cores da imagem que o usuário anexou para criar os slides.";
-    const mapaCores:any = { 'dark': 'Modo Escuro Profundo', 'azul': 'Tons de Azul Acadêmico', 'verde': 'Tons de Verde Corporativo', 'roxo': 'Tons de Roxo Criativo', 'terracota': 'Tons Terrosos', 'rosa': 'Tons de Rosa Suave', 'vermelho': 'Vermelho Alerta', 'amarelo': 'Amarelo Energia', 'laranja': 'Laranja Criativo', 'cinza': 'Cinza Monocromático' };
-    return 'CORES DA APRESENTAÇÃO: A paleta de cores dos slides deve ser baseada em: ' + (mapaCores[cor] || 'Cores neutras') + '.';
   };
 
   const executarGeracaoSiteHibrida = async () => {
@@ -1305,7 +686,6 @@ export default function Home() {
                                   <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
-                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
@@ -1590,159 +970,127 @@ export default function Home() {
                   
                   <div className="animate-[fadeIn_0.2s_ease] pb-12 bg-white flex flex-col h-full overflow-hidden">
                       
-                      <div className="flex p-2 bg-slate-50 border-b border-slate-200 gap-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
-                          <button onClick={() => setAbaAtiva('gerar')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'gerar' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-magic mr-1.5"></i> Criar Slide</button>
-                          <button onClick={() => setAbaAtiva('blocos')} className={'whitespace-nowrap flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition flex justify-center items-center ' + (abaAtiva === 'blocos' ? 'bg-white shadow border border-slate-200 text-indigo-700' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800')}><i className="fas fa-cubes mr-1.5"></i> Modelos</button>
-                      </div>
-
-                      {abaAtiva === 'blocos' ? (
-                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              <div>
-                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-layer-group"></i></span> Templates de Slide</h3>
-                                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">Adicione slides completos à sua apresentação. Eles entrarão <b>após o slide selecionado</b>.</p>
+                      <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                          
+                          <div>
+                              <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo Visual</h3>
+                              <div className="space-y-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                                   
-                                  <div className="space-y-4">
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Slide de Casos</p>
-                                              <p className="text-[10px] text-slate-500">Exemplos e Métricas Reais</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('depoimentos')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
-
-                                      <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center justify-between hover:border-indigo-300 transition-colors">
-                                          <div>
-                                              <p className="font-bold text-sm text-slate-800">Slide Financeiro</p>
-                                              <p className="text-[10px] text-slate-500">Investimento e Escopo de Projeto</p>
-                                          </div>
-                                          <button onClick={() => injetarBlocoPronto('precoDestaque')} className="w-10 h-10 bg-white border border-slate-200 text-indigo-600 rounded-full flex items-center justify-center shadow-sm hover:bg-indigo-50 transition"><i className="fas fa-plus"></i></button>
-                                      </div>
+                                  <div>
+                                      <label className="input-label mb-2">Tipografia Institucional</label>
+                                      <select value={fontFamily} onChange={(e) => aplicarFonte(e.target.value)} className="input-standard font-medium text-slate-800">
+                                          <option value="sans-serif">Padrão do Sistema</option>
+                                          <option value="Inter">Inter (Moderna e Limpa)</option>
+                                          <option value="Montserrat">Montserrat (Larga e Corporativa)</option>
+                                          <option value="Playfair Display">Playfair Display (Premium Serifada)</option>
+                                          <option value="Roboto">Roboto (Clássica e Neutra)</option>
+                                          <option value="Lora">Lora (Leitura Acadêmica)</option>
+                                      </select>
                                   </div>
 
-                                  <div className="mt-8 pt-6 border-t border-slate-100">
-                                      <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-code-branch"></i></span> Alteração Global em Massa</h3>
-                                      <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura da apresentação para você (ex: Trocar todas as cores, alterar fonte geral).</p>
-                                      <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os fundos no modo escuro profundo..."></textarea>
-                                      <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                          <i className="fas fa-magic text-yellow-300 text-lg"></i> Aplicar na Apresentação
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>
-                      ) : (
-                          <div className="p-5 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                              
-                              <div>
-                                  <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500">1</span> Cores e Estilo Visual</h3>
-                                  <div className="space-y-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                                  <div className="pt-2 border-t border-slate-100">
+                                      <label className="input-label mb-2">Paleta Base de Apresentação</label>
+                                      <div className="flex flex-wrap gap-2.5">
+                                          {[
+                                              {id: 'auto', cor: 'bg-gradient-to-r from-blue-400 to-purple-500', title: 'Extrair da Imagem'},
+                                              {id: 'dark', cor: 'bg-slate-900', title: 'Modo Escuro (Contraste Alto)'},
+                                              {id: 'azul', cor: 'bg-blue-600', title: 'Azul Institucional'},
+                                              {id: 'verde', cor: 'bg-emerald-500', title: 'Verde ESG / Financeiro'},
+                                              {id: 'roxo', cor: 'bg-purple-600', title: 'Roxo Criativo'},
+                                              {id: 'rosa', cor: 'bg-pink-500', title: 'Rosa Suave'},
+                                              {id: 'vermelho', cor: 'bg-red-600', title: 'Vermelho Impacto'},
+                                              {id: 'amarelo', cor: 'bg-yellow-400', title: 'Amarelo Alerta'},
+                                              {id: 'laranja', cor: 'bg-orange-500', title: 'Laranja Engajamento'},
+                                              {id: 'terracota', cor: 'bg-amber-700', title: 'Terracota Conforto'},
+                                              {id: 'cinza', cor: 'bg-zinc-500', title: 'Cinza Analítico'},
+                                              {id: 'personalizada', cor: 'bg-white border-2 border-dashed border-slate-300', title: 'Escolher Manualmente'}
+                                          ].map(c => (
+                                              <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={'w-8 h-8 rounded-full shadow-sm transition-transform ' + (corSelecionada === c.id ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : 'hover:scale-105') + ' ' + c.cor + ' flex items-center justify-center'} title={c.title}>
+                                                  {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}
+                                                  {c.id === 'personalizada' && <i className="fas fa-plus text-slate-400 text-[10px]"></i>}
+                                              </button>
+                                          ))}
+                                      </div>
                                       
-                                      <div>
-                                          <label className="input-label mb-2">Tipografia Institucional</label>
-                                          <select value={fontFamily} onChange={(e) => aplicarFonte(e.target.value)} className="input-standard font-medium text-slate-800">
-                                              <option value="sans-serif">Padrão do Sistema</option>
-                                              <option value="Inter">Inter (Moderna e Limpa)</option>
-                                              <option value="Montserrat">Montserrat (Larga e Corporativa)</option>
-                                              <option value="Playfair Display">Playfair Display (Premium Serifada)</option>
-                                              <option value="Roboto">Roboto (Clássica e Neutra)</option>
-                                              <option value="Lora">Lora (Leitura Acadêmica)</option>
-                                          </select>
-                                      </div>
-
-                                      <div className="pt-2 border-t border-slate-100">
-                                          <label className="input-label mb-2">Paleta Base de Apresentação</label>
-                                          <div className="flex flex-wrap gap-2.5">
-                                              {[
-                                                  {id: 'auto', cor: 'bg-gradient-to-r from-blue-400 to-purple-500', title: 'Extrair da Imagem'},
-                                                  {id: 'dark', cor: 'bg-slate-900', title: 'Modo Escuro (Contraste Alto)'},
-                                                  {id: 'azul', cor: 'bg-blue-600', title: 'Azul Institucional'},
-                                                  {id: 'verde', cor: 'bg-emerald-500', title: 'Verde ESG / Financeiro'},
-                                                  {id: 'roxo', cor: 'bg-purple-600', title: 'Roxo Criativo'},
-                                                  {id: 'rosa', cor: 'bg-pink-500', title: 'Rosa Suave'},
-                                                  {id: 'vermelho', cor: 'bg-red-600', title: 'Vermelho Impacto'},
-                                                  {id: 'amarelo', cor: 'bg-yellow-400', title: 'Amarelo Alerta'},
-                                                  {id: 'laranja', cor: 'bg-orange-500', title: 'Laranja Engajamento'},
-                                                  {id: 'terracota', cor: 'bg-amber-700', title: 'Terracota Conforto'},
-                                                  {id: 'cinza', cor: 'bg-zinc-500', title: 'Cinza Analítico'},
-                                                  {id: 'personalizada', cor: 'bg-white border-2 border-dashed border-slate-300', title: 'Escolher Manualmente'}
-                                              ].map(c => (
-                                                  <button key={c.id} onClick={() => setCorSelecionada(c.id)} className={'w-8 h-8 rounded-full shadow-sm transition-transform ' + (corSelecionada === c.id ? 'ring-2 ring-indigo-600 ring-offset-2 scale-110' : 'hover:scale-105') + ' ' + c.cor + ' flex items-center justify-center'} title={c.title}>
-                                                      {c.id === 'auto' && <i className="fas fa-wand-magic-sparkles text-white text-[10px]"></i>}
-                                                      {c.id === 'personalizada' && <i className="fas fa-plus text-slate-400 text-[10px]"></i>}
-                                                  </button>
-                                              ))}
-                                          </div>
-                                          
-                                          {corSelecionada === 'personalizada' && (
-                                              <div className="flex gap-3 mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 animate-[fadeIn_0.2s_ease]">
-                                                  <div className="flex-1"><label className="input-label">Fundo</label><input type="color" id="corFundo" className="w-full h-8 rounded-md cursor-pointer p-0 border border-slate-300 shadow-sm" defaultValue="#ffffff" /></div>
-                                                  <div className="flex-1"><label className="input-label">Destaque</label><input type="color" id="corPrimaria" className="w-full h-8 rounded-md cursor-pointer p-0 border border-slate-300 shadow-sm" defaultValue="#4f46e5" /></div>
-                                              </div>
-                                          )}
-                                      </div>
-
-                                      <div className="pt-2 border-t border-slate-100">
-                                          <label htmlFor="nichoEstilo" className="input-label">Diretriz de Design</label>
-                                          <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
-                                              <option value="minimalista">Clean e Corporativo</option>
-                                              <option value="premium">Premium Elegante (Keynote)</option>
-                                              <option value="agressivo">Venda de Palco (Alto Impacto)</option>
-                                              <option value="terapia">Acolhedor e Acadêmico</option>
-                                          </select>
-                                          
-                                          <div className="pt-4 mt-4 border-t border-slate-100">
-                                              <label className="input-label">Motor de Texto (IA)</label>
-                                              <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
-                                                  <option value="gemini">Gemini (Qualidade Profunda)</option>
-                                                  <option value="grok">Groq (Rápido e Criativo)</option>
-                                              </select>
-                                          </div>
-                                      </div>
-                                  </div>
-                              </div>
-
-                              <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
-                                  <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span> Base da Apresentação</h3>
-                                  
-                                  <div className="mb-4">
-                                      <label className="input-label text-indigo-800">Texto / Tópicos / Roteiro</label>
-                                      <textarea 
-                                          value={productContent} 
-                                          maxLength={5000} 
-                                          onChange={(e) => setProductContent(e.target.value)} 
-                                          className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" 
-                                          placeholder="Cole os tópicos da aula, o roteiro da palestra ou comandos extras para a IA estruturar os slides... (Até 5.000 caracteres)"
-                                      ></textarea>
-                                      <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
-                                  </div>
-
-                                  <div className="mb-4">
-                                      <label className="input-label text-indigo-800">Identidade Visual (Imagem Base)</label>
-                                      <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
-                                          <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-2"><i className="fas fa-image text-lg"></i></div>
-                                          <p className="text-xs font-bold text-slate-700">Anexar referência de Layout</p>
-                                          <p className="text-[10px] font-medium text-slate-500 mt-0.5">Ou cole aqui (Ctrl+V)</p>
-                                      </div>
-                                      <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
-                                      
-                                      {uploadedImages.length > 0 && (
-                                          <div className="flex gap-3 mt-3 overflow-x-auto pb-2 custom-scrollbar">
-                                              {uploadedImages.map((imgObj, idx) => (
-                                                  <div key={idx} className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-200 shadow-sm group">
-                                                      <img src={'data:' + imgObj.mimeType + ';base64,' + imgObj.data} className="w-full h-full object-cover" />
-                                                      <button className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" onClick={(e) => { e.stopPropagation(); removerImagem(idx); }}><i className="fas fa-trash text-sm"></i></button>
-                                                  </div>
-                                              ))}
+                                      {corSelecionada === 'personalizada' && (
+                                          <div className="flex gap-3 mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 animate-[fadeIn_0.2s_ease]">
+                                              <div className="flex-1"><label className="input-label">Fundo</label><input type="color" id="corFundo" className="w-full h-8 rounded-md cursor-pointer p-0 border border-slate-300 shadow-sm" defaultValue="#ffffff" /></div>
+                                              <div className="flex-1"><label className="input-label">Destaque</label><input type="color" id="corPrimaria" className="w-full h-8 rounded-md cursor-pointer p-0 border border-slate-300 shadow-sm" defaultValue="#4f46e5" /></div>
                                           </div>
                                       )}
                                   </div>
 
-                                  <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                      <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Apresentação Agora
-                                  </button>
+                                  <div className="pt-2 border-t border-slate-100">
+                                      <label htmlFor="nichoEstilo" className="input-label">Diretriz de Design</label>
+                                      <select id="nichoEstilo" value={nichoEstilo} onChange={(e) => setNichoEstilo(e.target.value)} className="input-standard text-sm font-bold text-slate-700">
+                                          <option value="minimalista">Clean e Corporativo</option>
+                                          <option value="premium">Premium Elegante (Keynote)</option>
+                                          <option value="agressivo">Venda de Palco (Alto Impacto)</option>
+                                          <option value="terapia">Acolhedor e Acadêmico</option>
+                                      </select>
+                                      
+                                      <div className="pt-4 mt-4 border-t border-slate-100">
+                                          <label className="input-label">Motor de Texto (IA)</label>
+                                          <select value={textEngine} onChange={(e) => setTextEngine(e.target.value as any)} className="input-standard font-bold text-slate-700">
+                                              <option value="gemini">Gemini (Qualidade Profunda)</option>
+                                              <option value="grok">Groq (Rápido e Criativo)</option>
+                                          </select>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+                              <h3 className="text-xs font-black uppercase text-indigo-900 mb-3 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">2</span> Base da Apresentação</h3>
+                              
+                              <div className="mb-4">
+                                  <label className="input-label text-indigo-800">Texto / Tópicos / Roteiro</label>
+                                  <textarea 
+                                      value={productContent} 
+                                      maxLength={5000} 
+                                      onChange={(e) => setProductContent(e.target.value)} 
+                                      className="input-standard h-28 resize-y leading-relaxed text-sm p-4 rounded-xl border-indigo-200 shadow-inner" 
+                                      placeholder="Cole os tópicos da aula, o roteiro da palestra ou comandos extras para a IA estruturar os slides... (Até 5.000 caracteres)"
+                                  ></textarea>
+                                  <div className="text-right text-[9px] text-indigo-400 mt-1 font-bold">{productContent.length}/5000</div>
                               </div>
 
+                              <div className="mb-4">
+                                  <label className="input-label text-indigo-800">Identidade Visual (Imagem Base)</label>
+                                  <div className="bg-white border-2 border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-colors rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm" onClick={() => document.getElementById('imageUploadInput')?.click()}>
+                                      <div className="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mb-2"><i className="fas fa-image text-lg"></i></div>
+                                      <p className="text-xs font-bold text-slate-700">Anexar referência de Layout</p>
+                                      <p className="text-[10px] font-medium text-slate-500 mt-0.5">Ou cole aqui (Ctrl+V)</p>
+                                  </div>
+                                  <input type="file" id="imageUploadInput" multiple accept="image/*" className="hidden" onChange={handleImageUploadInput} />
+                                  
+                                  {uploadedImages.length > 0 && (
+                                      <div className="flex gap-3 mt-3 overflow-x-auto pb-2 custom-scrollbar">
+                                          {uploadedImages.map((imgObj, idx) => (
+                                              <div key={idx} className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-200 shadow-sm group">
+                                                  <img src={'data:' + imgObj.mimeType + ';base64,' + imgObj.data} className="w-full h-full object-cover" />
+                                                  <button className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity" onClick={(e) => { e.stopPropagation(); removerImagem(idx); }}><i className="fas fa-trash text-sm"></i></button>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                              </div>
+
+                              <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                  <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Apresentação
+                              </button>
                           </div>
-                      )}
+                          
+                          <div className="mt-4 pt-6 border-t border-slate-100">
+                              <h3 className="text-xs font-black uppercase text-slate-800 mb-3.5 tracking-wide flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-500"><i className="fas fa-magic"></i></span> 3. Ajustes Globais (IA)</h3>
+                              <p className="text-xs text-slate-500 mb-4 leading-relaxed">Deixe a IA modificar toda a estrutura da apresentação para você (ex: Trocar todas as cores, alterar fonte geral).</p>
+                              <textarea id="refineGlobalContent" className="input-standard h-28 resize-none leading-relaxed text-sm p-4 rounded-xl shadow-inner border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50" placeholder="Ex: Deixe todos os fundos no modo escuro profundo..."></textarea>
+                              <button onClick={executarRefinamentoGlobal} className="w-full mt-4 bg-slate-800 hover:bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
+                                  <i className="fas fa-code-branch text-indigo-400 text-lg"></i> Aplicar na Apresentação
+                              </button>
+                          </div>
+
+                      </div>
                   </div>
               )}
           </div>
