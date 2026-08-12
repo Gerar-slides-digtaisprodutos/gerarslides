@@ -5,15 +5,481 @@ import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
-let modoEdicao=false;let elSelecionado=null;if(!document.getElementById('builder-core-styles')){const style=document.createElement('style');style.id='builder-core-styles';style.innerHTML='body.builder-editing * { cursor: crosshair !important; }';document.head.appendChild(style);}
-function rgbToHex(rgb){if(!rgb||rgb==='rgba(0, 0, 0, 0)'||rgb==='transparent')return '';let res=rgb.match(/\\d+/g);if(!res||res.length<3)return '';return "#"+res.slice(0,3).map(x=>parseInt(x).toString(16).padStart(2,'0')).join('');}
-function sendCleanHtml(){let outlineAntigo='';if(elSelecionado){outlineAntigo=elSelecionado.style.outline;elSelecionado.style.outline='';}let htmlStr='<!DOCTYPE html>\\n'+document.documentElement.outerHTML;if(elSelecionado){elSelecionado.style.outline=outlineAntigo;}window.parent.postMessage({type:'HTML_SYNC',html:htmlStr},'*');}
-function selectElement(targetEl){if(targetEl.tagName==='BODY'||targetEl.tagName==='HTML'||targetEl.id==='presentation-wrapper')return;if(elSelecionado){elSelecionado.style.outline='';elSelecionado.style.outlineOffset='';}elSelecionado=targetEl;elSelecionado.style.outline='3px solid #4f46e5';elSelecionado.style.outlineOffset='-3px';if(!elSelecionado.id)elSelecionado.id='node_'+Math.random().toString(36).substr(2,9);let isContainer=Array.from(elSelecionado.children).some(child=>child.tagName!=='BR');let isNavOrSection=['SECTION','NAV','HEADER','FOOTER','UL','DIV','ARTICLE','DETAILS','PAGE-CONTAINER'].some(t=>elSelecionado.tagName===t||elSelecionado.classList.contains(t.toLowerCase()));let bloqueiaTexto=isContainer&&isNavOrSection;let compStyle=window.getComputedStyle(elSelecionado);let isImg=elSelecionado.tagName==='IMG';let cColor=elSelecionado.dataset.rawBgColor||rgbToHex(compStyle.backgroundColor);let bgImg=elSelecionado.dataset.rawBgImage;if(bgImg===undefined){let rawBg=elSelecionado.style.backgroundImage||'';let match=rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);bgImg=match?match[1]:'';}let aspect=elSelecionado.style.aspectRatio||'';let objOpacity=1;if(isImg){objOpacity=parseFloat(compStyle.opacity);}else{objOpacity=parseFloat(elSelecionado.dataset.bgOpacity);}if(isNaN(objOpacity))objOpacity=1;let tAlign='';if(elSelecionado.classList.contains('text-center'))tAlign='text-center';else if(elSelecionado.classList.contains('text-right'))tAlign='text-right';else if(elSelecionado.classList.contains('text-left'))tAlign='text-left';let bAlign='';if(elSelecionado.classList.contains('mx-auto')||elSelecionado.classList.contains('self-center')||elSelecionado.classList.contains('justify-center'))bAlign='center';else if(elSelecionado.classList.contains('ml-auto')||elSelecionado.classList.contains('self-end')||elSelecionado.classList.contains('justify-end'))bAlign='right';else if(elSelecionado.classList.contains('mr-auto')||elSelecionado.classList.contains('self-start')||elSelecionado.classList.contains('justify-start'))bAlign='left';let paddingX='',paddingY='',shadow='',rounded='',borderW='';elSelecionado.classList.forEach(c=>{if(c.startsWith('px-')||c==='w-full')paddingX=c;if(c==='text-center'&&elSelecionado.classList.contains('w-full'))paddingX+=' text-center';if(c.startsWith('py-'))paddingY=c;if(c.startsWith('shadow-')&&!c.includes('hover:'))shadow+=c+' ';if(c==='shadow')shadow+=c+' ';if(c.startsWith('rounded'))rounded=c;if(c.startsWith('border-')&&!isNaN(c.split('-')[1]))borderW=c;if(c==='border')borderW=c;});let href=elSelecionado.getAttribute('href')||'';if(!href&&elSelecionado.parentElement&&elSelecionado.parentElement.tagName==='A'){href=elSelecionado.parentElement.getAttribute('href')||'';}window.parent.postMessage({type:'ELEMENT_SELECTED',id:elSelecionado.id,tagName:elSelecionado.tagName.toLowerCase(),text:elSelecionado.innerText||'',src:elSelecionado.src||'',href:href,className:elSelecionado.className,bgColor:cColor,textColor:rgbToHex(compStyle.color),borderColor:rgbToHex(compStyle.borderColor),fontSize:parseInt(compStyle.fontSize)||16,opacity:objOpacity,bgImage:bgImg,imgFormat:aspect,bloqueiaTexto:bloqueiaTexto,textAlign:tAlign,boxAlign:bAlign,paddingX:paddingX.trim(),paddingY:paddingY,shadow:shadow.trim(),rounded:rounded,borderW:borderW,outerHTML:elSelecionado.outerHTML},'*');}
-window.addEventListener('message',(event)=>{if(event.data.type==='TOGGLE_EDIT_MODE'){modoEdicao=event.data.value;if(modoEdicao){document.body.classList.add('builder-editing');}else{document.body.classList.remove('builder-editing');if(elSelecionado){elSelecionado.style.outline='';elSelecionado.style.outlineOffset='';elSelecionado=null;}document.querySelectorAll('[data-old-outline]').forEach(el=>{el.style.outline=el.dataset.oldOutline||'';el.style.outlineOffset='';delete el.dataset.oldOutline;});document.querySelectorAll('*').forEach(el=>{if(el.style.cursor==='crosshair')el.style.cursor='';});}}if(event.data.type==='SELECT_PARENT'){let el=document.getElementById(event.data.id);if(el&&el.parentElement&&el.parentElement.tagName!=='BODY')selectElement(el.parentElement);}if(event.data.type==='DELETE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){el.remove();elSelecionado=null;sendCleanHtml();}}if(event.data.type==='MOVE_UP'){let el=document.getElementById(event.data.id);if(el&&el.previousElementSibling){el.parentNode.insertBefore(el,el.previousElementSibling);el.scrollIntoView({behavior:'smooth',block:'center'});sendCleanHtml();}}if(event.data.type==='MOVE_DOWN'){let el=document.getElementById(event.data.id);if(el&&el.nextElementSibling){el.parentNode.insertBefore(el.nextElementSibling,el);el.scrollIntoView({behavior:'smooth',block:'center'});sendCleanHtml();}}if(event.data.type==='MOVE_SECTION_UP'||event.data.type==='MOVE_SECTION_DOWN'){let el=document.getElementById(event.data.id);if(el){let sec=el.closest('section, header, footer, .page-container')||el;if(event.data.type==='MOVE_SECTION_UP'&&sec.previousElementSibling){sec.parentNode.insertBefore(sec,sec.previousElementSibling);sec.scrollIntoView({behavior:'smooth',block:'center'});}else if(event.data.type==='MOVE_SECTION_DOWN'&&sec.nextElementSibling){sec.parentNode.insertBefore(sec.nextElementSibling,sec);sec.scrollIntoView({behavior:'smooth',block:'center'});}sendCleanHtml();}}if(event.data.type==='REVERSE_FLEX'){let el=document.getElementById(event.data.id);if(el){let target=el.classList.contains('flex')?el:(el.closest('.flex')||el.closest('section > div'));if(target){if(target.classList.contains('md:flex-row-reverse')||target.classList.contains('flex-row-reverse')){target.classList.remove('md:flex-row-reverse','flex-row-reverse');target.classList.add('md:flex-row');}else{target.classList.remove('md:flex-row','flex-row');target.classList.add('md:flex-row-reverse');}sendCleanHtml();}}}if(event.data.type==='DUPLICATE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let clone=el.cloneNode(true);clone.id='node_'+Math.random().toString(36).substr(2,9);clone.querySelectorAll('[id]').forEach(child=>{child.id='node_'+Math.random().toString(36).substr(2,9);});clone.style.outline='';clone.style.outlineOffset='';el.parentNode.insertBefore(clone,el.nextSibling);sendCleanHtml();}}if(event.data.type==='ADD_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let newHtml='';let newId='node_'+Math.random().toString(36).substr(2,9);if(event.data.elementType==='image')newHtml='<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Imagem" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="'+newId+'">';else if(event.data.elementType==='text')newHtml='<p class="text-slate-600 mb-4 text-base leading-relaxed" id="'+newId+'">Novo texto editável.</p>';else if(event.data.elementType==='button')newHtml='<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="'+newId+'">Clique Aqui</a>';let isContainer=['SECTION','DIV','HEADER','FOOTER','ARTICLE','NAV','PAGE-CONTAINER'].some(t=>el.tagName===t||el.classList.contains(t.toLowerCase()));if(isContainer)el.insertAdjacentHTML('beforeend',newHtml);else el.insertAdjacentHTML('afterend',newHtml);sendCleanHtml();}}if(event.data.type==='INJECT_BLOCK'){let el=document.getElementById(event.data.id);let targetEl=el?(el.closest('section, header, footer, .page-container')||el):document.body;let tempDiv=document.createElement('div');tempDiv.innerHTML=event.data.html;let newBlock=tempDiv.firstElementChild;newBlock.querySelectorAll('*').forEach(child=>{if(child.id)child.id='node_'+Math.random().toString(36).substr(2,9);});newBlock.id='node_'+Math.random().toString(36).substr(2,9);if(targetEl&&targetEl!==document.body&&targetEl.tagName!=='HTML'){targetEl.insertAdjacentElement('afterend',newBlock);newBlock.scrollIntoView({behavior:'smooth',block:'center'});}else{let wrapper=document.getElementById('presentation-wrapper')||document.body;wrapper.appendChild(newBlock);window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});}sendCleanHtml();}if(event.data.type==='UPDATE_FONT'){let fontName=event.data.font;let linkId='custom-google-font';let fontLink=document.getElementById(linkId);if(!fontLink){fontLink=document.createElement('link');fontLink.id=linkId;fontLink.rel='stylesheet';document.head.appendChild(fontLink);}if(fontName!=='sans-serif'){fontLink.href='https://fonts.googleapis.com/css2?family='+fontName.replace(/ /g,'+')+':wght@400;500;700;900&display=swap';document.body.style.fontFamily="'"+fontName+"', sans-serif";}else{fontLink.href='';document.body.style.fontFamily='';}sendCleanHtml();}if(event.data.type==='UPDATE_ELEMENT'){let el=document.getElementById(event.data.id);if(el){let isImg=el.tagName==='IMG';let p=event.data.device==='mobile'?'max-md:':'';let escP=p?'max-md\\\\:':'';if(event.data.text!==undefined&&event.data.forceTextUpdate)el.innerText=event.data.text;if(event.data.src!==undefined)el.src=event.data.src;if(event.data.textColor!==undefined)el.style.color=event.data.textColor;if(event.data.fontSize!==undefined){el.style.fontSize='';el.className=el.className.replace(new RegExp('\\\\b'+escP+'text-\\\\[\\\\d+px\\\\]\\\\b','g'),'').trim();if(event.data.fontSize)el.classList.add(p+'text-['+event.data.fontSize+'px]');}if(event.data.href!==undefined){let parentIsA=el.parentElement&&el.parentElement.tagName==='A';if(el.tagName==='A'){if(event.data.href.trim()==='')el.removeAttribute('href');else el.setAttribute('href',event.data.href);}else if(parentIsA){if(event.data.href.trim()==='')el.parentElement.removeAttribute('href');else el.parentElement.setAttribute('href',event.data.href);}else if(event.data.href.trim()!==''){let a=document.createElement('a');a.href=event.data.href;a.className="inline-block cursor-pointer transition-all hover:opacity-90";if(el.classList.contains('w-full')||isImg)a.classList.add('w-full','block');el.parentNode.insertBefore(a,el);a.appendChild(el);}}if(event.data.bgColor!==undefined)el.dataset.rawBgColor=event.data.bgColor;if(event.data.bgImage!==undefined)el.dataset.rawBgImage=event.data.bgImage;if(event.data.opacity!==undefined){if(isImg){el.style.opacity=event.data.opacity;}else{el.dataset.bgOpacity=event.data.opacity;el.style.opacity='';}}if(!isImg){let cBgColor=el.dataset.rawBgColor||rgbToHex(window.getComputedStyle(el).backgroundColor);if(!cBgColor||cBgColor==='')cBgColor='#ffffff';let cBgImage=el.dataset.rawBgImage;if(cBgImage===undefined){let match=(el.style.backgroundImage||'').match(/url\\\\(['"]?([^'"]+)['"]?\\\\)/);cBgImage=match?match[1]:'';}let cOpacity=parseFloat(el.dataset.bgOpacity);if(isNaN(cOpacity))cOpacity=1;let r=255,g=255,b=255;if(cBgColor.startsWith('#')){let hex=cBgColor.replace('#','');if(hex.length===3)hex=hex.split('').map(x=>x+x).join('');if(hex.length===6){r=parseInt(hex.substring(0,2),16);g=parseInt(hex.substring(2,4),16);b=parseInt(hex.substring(4,6),16);}}let rgbaStr='rgba('+r+', '+g+', '+b+', '+cOpacity+')';el.style.setProperty('--tw-bg-opacity','1');if(cBgImage&&cBgImage!=='none'){el.style.backgroundColor='transparent';el.style.backgroundImage='linear-gradient('+rgbaStr+', '+rgbaStr+'), url(\\\''+cBgImage+'\\\')';el.style.backgroundSize="cover";el.style.backgroundPosition="center";el.style.backgroundRepeat="no-repeat";}else{el.style.backgroundImage="none";el.style.backgroundColor=rgbaStr;}if(cOpacity<1&&cOpacity>0)el.classList.add('backdrop-blur-md');else el.classList.remove('backdrop-blur-md');}else{if(event.data.bgColor!==undefined)el.style.backgroundColor=event.data.bgColor;}if(event.data.paddingX!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(px-\\\\d+|px-\\\\[.*?\\\\]|w-full|text-center)\\\\b','g'),'').trim();if(event.data.paddingX&&event.data.paddingX!=='none'){event.data.paddingX.split(' ').forEach(cls=>el.classList.add(p+cls));}}if(event.data.paddingY!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(py-\\\\d+|py-\\\\[.*?\\\\])\\\\b','g'),'').trim();if(event.data.paddingY&&event.data.paddingY!=='none')el.classList.add(p+event.data.paddingY);}if(event.data.rounded!==undefined){el.className=el.className.replace(/\\\\brounded\\\\b|\\\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\\\b/g,'').trim();if(event.data.rounded&&event.data.rounded!=='none')el.classList.add(event.data.rounded);}if(event.data.shadow!==undefined){el.className=el.className.replace(/\\\\bshadow\\\\b|\\\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\\\b|\\\\bshadow-[a-z]+-500\\\\/50\\\\b/g,'').trim();if(event.data.shadow&&event.data.shadow!=='none'){event.data.shadow.split(' ').forEach(cls=>el.classList.add(cls));}}if(event.data.borderW!==undefined){el.className=el.className.replace(/\\\\bborder\\\\b|\\\\bborder-\\\\d+\\\\b/g,'').trim();if(event.data.borderW&&event.data.borderW!=='none'){el.classList.add(event.data.borderW);}}if(event.data.textAlign!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(text-left|text-center|text-right|text-justify)\\\\b','g'),'').trim();if(event.data.textAlign)el.classList.add(p+event.data.textAlign);}if(event.data.boxAlign!==undefined){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\\\b','g'),'').trim();if(event.data.boxAlign==='center')el.classList.add(p+'mx-auto',p+'self-center',p+'justify-self-center');if(event.data.boxAlign==='right')el.classList.add(p+'ml-auto',p+'self-end',p+'justify-self-end');if(event.data.boxAlign==='left')el.classList.add(p+'mr-auto',p+'self-start',p+'justify-self-start');if(window.getComputedStyle(el).display.includes('flex')||window.getComputedStyle(el).display.includes('grid')){el.className=el.className.replace(new RegExp('\\\\b'+escP+'(justify-start|justify-center|justify-end)\\\\b','g'),'').trim();if(event.data.boxAlign==='center')el.classList.add(p+'justify-center');if(event.data.boxAlign==='right')el.classList.add(p+'justify-end');if(event.data.boxAlign==='left')el.classList.add(p+'justify-start');}}if(event.data.animationClass!==undefined){const animClasses=['animate-pulse','animate-bounce','hover:scale-105','hover:-translate-y-2','hover:-translate-y-1','hover:shadow-2xl','hover:shadow-indigo-500/50','hover:rotate-3','transition-transform','transition-all','transition-shadow','duration-300'];el.classList.remove(...animClasses);if(event.data.animationClass)event.data.animationClass.split(' ').forEach(cls=>el.classList.add(cls));}if(event.data.imgFormat!==undefined){if(event.data.imgFormat===''){el.style.aspectRatio='';el.style.height='';el.classList.remove('object-cover','w-full','h-auto');}else{el.className=el.className.replace(/\\\\bh-(full|screen|auto|min|max|fit|px|\\\\d+|\\\\[.*?\\\\])\\\\b/g,'').trim();el.style.aspectRatio=event.data.imgFormat;el.style.height='auto';el.classList.add('object-cover','w-full');}}if(event.data.imgRounded!==undefined){const allClassesToRemove=['rounded-none','rounded-sm','rounded-md','rounded-lg','rounded-xl','rounded-2xl','rounded-full','shadow-none','shadow-sm','shadow-md','shadow-lg','shadow-xl','shadow-2xl','border-2','border-4','border-8','border-white','border-indigo-500','border-emerald-500','shadow-indigo-500/50','shadow-emerald-500/50','shadow-rose-500/50'];el.classList.remove(...allClassesToRemove);if(event.data.imgRounded){event.data.imgRounded.split(' ').forEach(cls=>{if(cls)el.classList.add(cls);});}}if(event.data.imgBorder!==undefined){if(event.data.imgBorder){el.style.borderWidth='4px';el.style.borderStyle='solid';el.classList.add('shadow-xl');}else{el.style.borderWidth='0px';el.classList.remove('shadow-xl');}}if(event.data.borderColor!==undefined)el.style.borderColor=event.data.borderColor;sendCleanHtml();}}if(event.data.type==='REPLACE_ELEMENT_HTML'){let el=document.getElementById(event.data.id);if(el){el.outerHTML=event.data.newHtml;sendCleanHtml();}}});
-document.addEventListener('mouseover',(e)=>{if(!modoEdicao||e.target===document.body||e.target===document.documentElement)return;e.target.dataset.oldOutline=e.target.style.outline;e.target.style.outline='2px solid #0ea5e9';e.target.style.outlineOffset='-2px';});
-document.addEventListener('mouseout',(e)=>{if(!modoEdicao||e.target===document.body||e.target===document.documentElement)return;if(e.target!==elSelecionado){e.target.style.outline=e.target.dataset.oldOutline||'';e.target.style.outlineOffset='';}});
-window.addEventListener('submit',function(e){e.preventDefault();e.stopPropagation();},true);
-document.addEventListener('click',(e)=>{let link=e.target.closest('a');let btn=e.target.closest('button');let form=e.target.closest('form');let summary=e.target.closest('summary');if(form&&!summary&&!btn){e.preventDefault();}if(modoEdicao){if(summary){setTimeout(()=>selectElement(summary),10);return;}e.preventDefault();e.stopPropagation();selectElement(e.target);return;}if(link||btn){e.preventDefault();e.stopPropagation();if(link){let href=link.getAttribute('href')||'';if(href.startsWith('#')&&href.length>1){try{var tEl=document.querySelector(href);if(tEl)tEl.scrollIntoView({behavior:'smooth',block:'start'});}catch(err){}}else if(href&&!href.startsWith('javascript:')&&href!=='/'&&href!=='#'){let a=document.createElement('a');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.click();}}return;}},true);
+    let modoEdicao = false;
+    let elSelecionado = null;
+
+    if (!document.getElementById('builder-core-styles')) {
+        const style = document.createElement('style');
+        style.id = 'builder-core-styles';
+        style.innerHTML = 'body.builder-editing * { cursor: crosshair !important; }';
+        document.head.appendChild(style);
+    }
+
+    function rgbToHex(rgb) {
+        if(!rgb || rgb === 'rgba(0, 0, 0, 0)' || rgb === 'transparent') return '';
+        let res = rgb.match(/\\d+/g);
+        if(!res || res.length < 3) return '';
+        return "#" + res.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    }
+
+    function sendCleanHtml() {
+        let outlineAntigo = '';
+        if(elSelecionado) { outlineAntigo = elSelecionado.style.outline; elSelecionado.style.outline = ''; }
+        let htmlStr = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+        if(elSelecionado) { elSelecionado.style.outline = outlineAntigo; }
+        window.parent.postMessage({ type: 'HTML_SYNC', html: htmlStr }, '*');
+    }
+
+    function selectElement(targetEl) {
+        if (targetEl.tagName === 'BODY' || targetEl.tagName === 'HTML' || targetEl.id === 'presentation-wrapper') return;
+
+        if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; }
+        elSelecionado = targetEl;
+        elSelecionado.style.outline = '3px solid #4f46e5';
+        elSelecionado.style.outlineOffset = '-3px';
+
+        if(!elSelecionado.id) elSelecionado.id = 'node_' + Math.random().toString(36).substr(2,9);
+
+        let isContainer = Array.from(elSelecionado.children).some(child => child.tagName !== 'BR');
+        let isNavOrSection = ['SECTION', 'NAV', 'HEADER', 'FOOTER', 'UL', 'DIV', 'ARTICLE', 'DETAILS'].includes(elSelecionado.tagName);
+        let bloqueiaTexto = isContainer && isNavOrSection;
+
+        let compStyle = window.getComputedStyle(elSelecionado);
+        let isImg = elSelecionado.tagName === 'IMG';
+        
+        let cColor = elSelecionado.dataset.rawBgColor || rgbToHex(compStyle.backgroundColor);
+        let bgImg = elSelecionado.dataset.rawBgImage;
+        
+        if (bgImg === undefined) {
+            let rawBg = elSelecionado.style.backgroundImage || '';
+            let match = rawBg.match(/url\\(['"]?([^'"]+)['"]?\\)/);
+            bgImg = match ? match[1] : '';
+        }
+
+        let aspect = elSelecionado.style.aspectRatio || '';
+        let objOpacity = 1;
+        
+        if (isImg) { 
+            objOpacity = parseFloat(compStyle.opacity); 
+        } else { 
+            objOpacity = parseFloat(elSelecionado.dataset.bgOpacity); 
+        }
+        if (isNaN(objOpacity)) objOpacity = 1;
+
+        let tAlign = '';
+        if(elSelecionado.classList.contains('text-center')) tAlign = 'text-center';
+        else if(elSelecionado.classList.contains('text-right')) tAlign = 'text-right';
+        else if(elSelecionado.classList.contains('text-left')) tAlign = 'text-left';
+
+        let bAlign = '';
+        if(elSelecionado.classList.contains('mx-auto') || elSelecionado.classList.contains('self-center') || elSelecionado.classList.contains('justify-center')) bAlign = 'center';
+        else if(elSelecionado.classList.contains('ml-auto') || elSelecionado.classList.contains('self-end') || elSelecionado.classList.contains('justify-end')) bAlign = 'right';
+        else if(elSelecionado.classList.contains('mr-auto') || elSelecionado.classList.contains('self-start') || elSelecionado.classList.contains('justify-start')) bAlign = 'left';
+
+        let paddingX = '', paddingY = '', shadow = '', rounded = '', borderW = '';
+        elSelecionado.classList.forEach(c => {
+            if(c.startsWith('px-') || c === 'w-full') paddingX = c; 
+            if(c === 'text-center' && elSelecionado.classList.contains('w-full')) paddingX += ' text-center';
+            if(c.startsWith('py-')) paddingY = c;
+            if(c.startsWith('shadow-') && !c.includes('hover:')) shadow += c + ' ';
+            if(c === 'shadow') shadow += c + ' ';
+            if(c.startsWith('rounded')) rounded = c;
+            if(c.startsWith('border-') && !isNaN(c.split('-')[1])) borderW = c;
+            if(c === 'border') borderW = c;
+        });
+
+        let href = elSelecionado.getAttribute('href') || '';
+        if (!href && elSelecionado.parentElement && elSelecionado.parentElement.tagName === 'A') {
+            href = elSelecionado.parentElement.getAttribute('href') || '';
+        }
+
+        window.parent.postMessage({
+            type: 'ELEMENT_SELECTED',
+            id: elSelecionado.id,
+            tagName: elSelecionado.tagName.toLowerCase(),
+            text: elSelecionado.innerText || '',
+            src: elSelecionado.src || '',
+            href: href,
+            className: elSelecionado.className,
+            bgColor: cColor,
+            textColor: rgbToHex(compStyle.color),
+            borderColor: rgbToHex(compStyle.borderColor),
+            fontSize: parseInt(compStyle.fontSize) || 16,
+            opacity: objOpacity,
+            bgImage: bgImg,
+            imgFormat: aspect,
+            bloqueiaTexto: bloqueiaTexto,
+            textAlign: tAlign,
+            boxAlign: bAlign,
+            paddingX: paddingX.trim(),
+            paddingY: paddingY,
+            shadow: shadow.trim(),
+            rounded: rounded,
+            borderW: borderW,
+            outerHTML: elSelecionado.outerHTML
+        }, '*');
+    }
+
+    window.addEventListener('message', (event) => {
+        if(event.data.type === 'TOGGLE_EDIT_MODE') {
+            modoEdicao = event.data.value;
+            if(modoEdicao) {
+                document.body.classList.add('builder-editing');
+            } else {
+                document.body.classList.remove('builder-editing');
+                if(elSelecionado) { elSelecionado.style.outline = ''; elSelecionado.style.outlineOffset = ''; elSelecionado = null; }
+                document.querySelectorAll('[data-old-outline]').forEach(el => {
+                    el.style.outline = el.dataset.oldOutline || '';
+                    el.style.outlineOffset = '';
+                    delete el.dataset.oldOutline;
+                });
+                document.querySelectorAll('*').forEach(el => {
+                    if (el.style.cursor === 'crosshair') el.style.cursor = '';
+                });
+            }
+        }
+        
+        if (event.data.type === 'SELECT_PARENT') {
+            let el = document.getElementById(event.data.id);
+            if (el && el.parentElement && el.parentElement.tagName !== 'BODY') {
+                selectElement(el.parentElement);
+            }
+        }
+
+        if (event.data.type === 'DELETE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) { el.remove(); elSelecionado = null; sendCleanHtml(); }
+        }
+
+        if (event.data.type === 'MOVE_UP') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.previousElementSibling) {
+                el.parentNode.insertBefore(el, el.previousElementSibling);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'MOVE_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el && el.nextElementSibling) {
+                el.parentNode.insertBefore(el.nextElementSibling, el);
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'MOVE_SECTION_UP' || event.data.type === 'MOVE_SECTION_DOWN') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let sec = el.closest('section, header, footer') || el;
+                if(event.data.type === 'MOVE_SECTION_UP' && sec.previousElementSibling) {
+                    sec.parentNode.insertBefore(sec, sec.previousElementSibling);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if(event.data.type === 'MOVE_SECTION_DOWN' && sec.nextElementSibling) {
+                    sec.parentNode.insertBefore(sec.nextElementSibling, sec);
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'REVERSE_FLEX') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let target = el.classList.contains('flex') ? el : (el.closest('.flex') || el.closest('section > div'));
+                if(target) {
+                    if(target.classList.contains('md:flex-row-reverse') || target.classList.contains('flex-row-reverse')) {
+                        target.classList.remove('md:flex-row-reverse', 'flex-row-reverse');
+                        target.classList.add('md:flex-row');
+                    } else {
+                        target.classList.remove('md:flex-row', 'flex-row');
+                        target.classList.add('md:flex-row-reverse');
+                    }
+                    sendCleanHtml();
+                }
+            }
+        }
+
+        if (event.data.type === 'DUPLICATE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let clone = el.cloneNode(true);
+                clone.id = 'node_' + Math.random().toString(36).substr(2,9);
+                clone.querySelectorAll('[id]').forEach(child => {
+                    child.id = 'node_' + Math.random().toString(36).substr(2,9);
+                });
+                clone.style.outline = '';
+                clone.style.outlineOffset = '';
+                el.parentNode.insertBefore(clone, el.nextSibling);
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'ADD_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let newHtml = '';
+                let newId = 'node_' + Math.random().toString(36).substr(2,9);
+                if(event.data.elementType === 'image') {
+                    newHtml = '<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
+                } else if(event.data.elementType === 'text') {
+                    newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu slide.</p>';
+                } else if(event.data.elementType === 'button') {
+                    newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
+                }
+                let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
+                if (isContainer) {
+                    el.insertAdjacentHTML('beforeend', newHtml);
+                } else {
+                    el.insertAdjacentHTML('afterend', newHtml);
+                }
+                sendCleanHtml();
+            }
+        }
+
+        if (event.data.type === 'INJECT_BLOCK') {
+            let el = document.getElementById(event.data.id);
+            let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = event.data.html;
+            let newBlock = tempDiv.firstElementChild;
+            newBlock.querySelectorAll('*').forEach(child => {
+                if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
+            });
+            newBlock.id = 'node_' + Math.random().toString(36).substr(2,9);
+
+            if (targetEl && targetEl !== document.body && targetEl.tagName !== 'HTML') {
+                targetEl.insertAdjacentElement('afterend', newBlock);
+                newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                let wrapper = document.getElementById('presentation-wrapper') || document.body;
+                wrapper.appendChild(newBlock);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+            sendCleanHtml();
+        }
+
+        if (event.data.type === 'UPDATE_FONT') {
+            let fontName = event.data.font;
+            let linkId = 'custom-google-font';
+            let fontLink = document.getElementById(linkId);
+            if (!fontLink) {
+                fontLink = document.createElement('link');
+                fontLink.id = linkId;
+                fontLink.rel = 'stylesheet';
+                document.head.appendChild(fontLink);
+            }
+            if (fontName !== 'sans-serif') {
+                fontLink.href = '[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
+                document.body.style.fontFamily = "'" + fontName + "', sans-serif";
+            } else {
+                fontLink.href = '';
+                document.body.style.fontFamily = '';
+            }
+            sendCleanHtml();
+        }
+
+        if(event.data.type === 'UPDATE_ELEMENT') {
+            let el = document.getElementById(event.data.id);
+            if(el) {
+                let isImg = el.tagName === 'IMG';
+                let p = event.data.device === 'mobile' ? 'max-md:' : '';
+                let escP = p ? 'max-md\\:' : '';
+
+                if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
+                if(event.data.src !== undefined) el.src = event.data.src;
+                if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
+                
+                if(event.data.fontSize !== undefined) {
+                    el.style.fontSize = ''; 
+                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
+                    if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
+                }
+                
+                if (event.data.href !== undefined) {
+                    let parentIsA = el.parentElement && el.parentElement.tagName === 'A';
+                    if (el.tagName === 'A') {
+                        if (event.data.href.trim() === '') el.removeAttribute('href');
+                        else el.setAttribute('href', event.data.href);
+                    } else if (parentIsA) {
+                        if (event.data.href.trim() === '') el.parentElement.removeAttribute('href');
+                        else el.parentElement.setAttribute('href', event.data.href);
+                    } else if (event.data.href.trim() !== '') {
+                        let a = document.createElement('a'); a.href = event.data.href; a.className = "inline-block cursor-pointer transition-all hover:opacity-90";
+                        if (el.classList.contains('w-full') || isImg) a.classList.add('w-full', 'block');
+                        el.parentNode.insertBefore(a, el); a.appendChild(el);
+                    }
+                }
+
+                if (event.data.bgColor !== undefined) el.dataset.rawBgColor = event.data.bgColor;
+                if (event.data.bgImage !== undefined) el.dataset.rawBgImage = event.data.bgImage;
+                if (event.data.opacity !== undefined) {
+                    if (isImg) { el.style.opacity = event.data.opacity; } 
+                    else { el.dataset.bgOpacity = event.data.opacity; el.style.opacity = ''; }
+                }
+
+                if (!isImg) {
+                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
+                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
+                    let cBgImage = el.dataset.rawBgImage;
+                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
+                    let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
+
+                    let r = 255, g = 255, b = 255;
+                    if (cBgColor.startsWith('#')) {
+                        let hex = cBgColor.replace('#', '');
+                        if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
+                        if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
+                    }
+
+                    let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')';
+                    el.style.setProperty('--tw-bg-opacity', '1');
+
+                    if (cBgImage && cBgImage !== 'none') {
+                        el.style.backgroundColor = 'transparent';
+                        el.style.backgroundImage = 'linear-gradient(' + rgbaStr + ', ' + rgbaStr + '), url(\\'' + cBgImage + '\\')';
+                        el.style.backgroundSize = "cover"; el.style.backgroundPosition = "center"; el.style.backgroundRepeat = "no-repeat";
+                    } else {
+                        el.style.backgroundImage = "none"; el.style.backgroundColor = rgbaStr;
+                    }
+
+                    if (cOpacity < 1 && cOpacity > 0) el.classList.add('backdrop-blur-md');
+                    else el.classList.remove('backdrop-blur-md');
+                } else {
+                    if(event.data.bgColor !== undefined) el.style.backgroundColor = event.data.bgColor;
+                }
+
+                if(event.data.paddingX !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
+                    if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
+                }
+                if(event.data.paddingY !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
+                    if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
+                }
+                if(event.data.rounded !== undefined) {
+                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
+                    if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
+                }
+                if(event.data.shadow !== undefined) {
+                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
+                    if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
+                }
+                if(event.data.borderW !== undefined) {
+                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
+                    if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
+                }
+
+                if(event.data.textAlign !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
+                    if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
+                }
+
+                if(event.data.boxAlign !== undefined) {
+                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
+                    if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
+                    if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
+                    if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
+                    
+                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
+                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
+                        if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
+                        if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
+                        if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
+                    }
+                }
+
+                if(event.data.animationClass !== undefined) {
+                    const animClasses = ['animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:-translate-y-2', 'hover:-translate-y-1', 'hover:shadow-2xl', 'hover:shadow-indigo-500/50', 'hover:rotate-3', 'transition-transform', 'transition-all', 'transition-shadow', 'duration-300'];
+                    el.classList.remove(...animClasses);
+                    if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
+                }
+
+                if(event.data.imgFormat !== undefined) {
+                    if (event.data.imgFormat === '') {
+                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
+                    } else {
+                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
+                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
+                    }
+                }
+                
+                if(event.data.imgRounded !== undefined) {
+                    const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
+                    el.classList.remove(...allClassesToRemove);
+                    if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
+                }
+
+                if(event.data.imgBorder !== undefined) {
+                    if (event.data.imgBorder) { el.style.borderWidth = '4px'; el.style.borderStyle = 'solid'; el.classList.add('shadow-xl');
+                    } else { el.style.borderWidth = '0px'; el.classList.remove('shadow-xl'); }
+                }
+                if(event.data.borderColor !== undefined) el.style.borderColor = event.data.borderColor;
+
+                sendCleanHtml();
+            }
+        }
+        if(event.data.type === 'REPLACE_ELEMENT_HTML') {
+            let el = document.getElementById(event.data.id);
+            if(el) { el.outerHTML = event.data.newHtml; sendCleanHtml(); }
+        }
+    });
+
+    document.addEventListener('mouseover', (e) => {
+        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
+        e.target.dataset.oldOutline = e.target.style.outline;
+        e.target.style.outline = '2px solid #0ea5e9'; 
+        e.target.style.outlineOffset = '-2px';
+    });
+    
+    document.addEventListener('mouseout', (e) => {
+        if(!modoEdicao || e.target === document.body || e.target === document.documentElement) return;
+        if(e.target !== elSelecionado) { 
+            e.target.style.outline = e.target.dataset.oldOutline || ''; 
+            e.target.style.outlineOffset = '';
+        }
+    });
+
+    window.addEventListener('submit', function(e) { e.preventDefault(); e.stopPropagation(); }, true);
+
+    document.addEventListener('click', (e) => {
+        let link = e.target.closest('a');
+        let btn = e.target.closest('button');
+        let form = e.target.closest('form');
+        let summary = e.target.closest('summary');
+
+        if (form && !summary && !btn) { e.preventDefault(); }
+        
+        if (modoEdicao) {
+            if (summary) {
+                setTimeout(() => selectElement(summary), 10);
+                return; 
+            }
+            e.preventDefault(); 
+            e.stopPropagation();
+            selectElement(e.target);
+            return;
+        }
+
+        if (link || btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            if(link) {
+                let href = link.getAttribute('href') || '';
+                if(href.startsWith('#') && href.length > 1) {
+                    try { var tEl = document.querySelector(href); if (tEl) tEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(err) {}
+                } else if (href && !href.startsWith('javascript:') && href !== '/' && href !== '#') {
+                    let a = document.createElement('a');
+                    a.href = href;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.click();
+                }
+            }
+            return;
+        }
+    }, true); 
 </script>`;
 
 export default function Home() {
@@ -61,7 +527,7 @@ export default function Home() {
           if (!clean.includes('@media print')) { clean = clean.replace('</head>', printStyles + '\n</head>'); }
           return clean;
       }
-      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"></script>\n    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n    <title>' + seoData.title + '</title>\n' + printStyles + '\n</head>\n<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n        ' + clean + '\n    </div>\n</body>\n</html>';
+      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>\n    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">\n    <link href="[https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap](https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap)" rel="stylesheet">\n    <title>' + seoData.title + '</title>\n' + printStyles + '\n</head>\n<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n        ' + clean + '\n    </div>\n</body>\n</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
@@ -257,7 +723,7 @@ export default function Home() {
               dinamica: dinamicaStyle, 
               isElementRefinement, 
               isGeminiForced: !isElementRefinement,
-              useGrok
+              useGrok: textEngine === 'grok' || useGrok
           }) 
       });
       const responseText = await response.text();
@@ -345,7 +811,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
+          const fallback = '[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=)' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -468,7 +934,7 @@ export default function Home() {
         const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
         
-        if (!doc || !doc.querySelector('section, .page-container')) {
+        if (!doc || !doc.querySelector('section')) {
             (window as any).showNotification('Gere o projeto primeiro.', 'error');
             return;
         }
@@ -477,21 +943,21 @@ export default function Home() {
 
         if (!(window as any).html2canvas) {
             const scriptCanvas = document.createElement('script');
-            scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+            scriptCanvas.src = "[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)";
             document.head.appendChild(scriptCanvas);
         }
         if (!(window as any).PptxGenJS) {
             const scriptZip = document.createElement('script');
-            scriptZip.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js";
+            scriptZip.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js)";
             document.head.appendChild(scriptZip);
             const scriptPptx = document.createElement('script');
-            scriptPptx.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js";
+            scriptPptx.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js)";
             document.head.appendChild(scriptPptx);
         }
 
         setTimeout(async () => {
             try {
-                const sections = doc.querySelectorAll('section, .page-container');
+                const sections = doc.querySelectorAll('section');
                 const pptx = new (window as any).PptxGenJS();
                 pptx.layout = 'LAYOUT_16x9';
 
@@ -542,7 +1008,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -686,6 +1152,7 @@ export default function Home() {
                                   <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
+                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
@@ -1095,6 +1562,134 @@ export default function Home() {
               )}
           </div>
       </div>
+
+      {/* PAINEL DIREITO (RESTAURADO E COMPLETO) */}
+      <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
+          
+          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
+              <div className="flex items-center gap-3 md:gap-5">
+                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-[11px] bg-white text-indigo-700 shadow-sm transition">Ver Slides</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
+                  </div>
+                  
+                  {/* SIMULADOR DE DISPOSITIVOS */}
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="16:9 Slide Monitor"><i className="fas fa-desktop text-xs"></i></button>
+                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
+                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Vertical Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
+                  </div>
+
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-file-import"></i> Importar HTML
+                  </button>
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-cog"></i> Ajustes
+                  </button>
+                  
+                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
+              </div>
+
+              <div className="flex items-center gap-3 md:gap-4">
+                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Minhas Apresentações</button>
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  
+                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
+                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
+                      <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
+                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
+                  </div>
+                  
+                  {siteEditando ? (
+                      <div className="flex gap-2">
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                      </div>
+                  ) : (
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
+                  )}
+              </div>
+          </div>
+          
+          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar">
+              {modoInspetor && (
+                  <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
+                      <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar!
+                  </div>
+              )}
+              
+              <div className={'mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white ' + (modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'border border-slate-300') + ' ' + (deviceView === 'mobile' ? 'w-[400px] h-[711px] shrink-0' : deviceView === 'tablet' ? 'w-[800px] h-full shrink-0' : 'aspect-video w-full max-w-[1280px]')}>
+                  {modoInspetor && (
+                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
+                          <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
+                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização da Apresentação</div>
+                      </div>
+                  )}
+                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin allow-modals" title="Navegador do Site"></iframe>
+                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
+                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
+                          onBlur={(e) => {
+                              const newHtml = e.target.value;
+                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
+                              setHistoricoCodigo(prev => {
+                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
+                                  return [...prev, newHtml];
+                              });
+                          }}
+                      ></textarea>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      {modalMeusSitesAberto && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Apresentações Salvas</h2>
+              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
+              {carregandoSites ? <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando apresentações...</p></div> : listaSites.length === 0 ? <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Você ainda não tem nenhuma apresentação.</p><p className="text-sm text-slate-400 mt-2">Gere seus primeiros slides e publique para aparecer aqui!</p></div> : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {sitesAtuais.map((site) => {
+                        const linkUrl = window.location.origin + '/' + site.slug;
+                        return (
+                          <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
+                            <h3 className="font-black text-base text-slate-800 mb-3 truncate group-hover:text-indigo-700 transition-colors">{site.titulo}</h3>
+                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
+                                <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
+                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
+                            </div>
+                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
+                              <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link Visualizador</a>
+                              <div className="flex gap-2">
+                                <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Abrir no Painel</button>
+                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition" title="Deletar Projeto"><i className="fas fa-trash"></i></button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalPaginas > 1 && (
+                      <div className="flex justify-center items-center gap-4 mt-8 pt-6">
+                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm"><i className="fas fa-chevron-left"></i> Voltar</button>
+                        <span className="text-xs font-black text-slate-500 tracking-widest uppercase bg-white px-4 py-2 rounded-lg border border-slate-200">Página {paginaAtual} de {totalPaginas}</span>
+                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm">Próxima <i className="fas fa-chevron-right ml-1"></i></button>
+                      </div>
+                    )}
+                  </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
