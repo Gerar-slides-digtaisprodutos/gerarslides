@@ -31,11 +31,11 @@ export async function POST(req: Request) {
 🚨 RESTRIÇÃO DE ESTILO: Utilize APENAS fotografia humana realista. É estritamente PROIBIDO usar desenhos, gráficos animados ou elementos sci-fi.
 `;
 
-    let regrasObrigatorias = "";
+   let regrasObrigatorias = "";
     if (isSiteRefinement) {
-        regrasObrigatorias = `=== REGRA DE REFATORAÇÃO GLOBAL ===\nModifique APENAS o que foi pedido pelo usuário e devolva TODO o código HTML dos slides estruturado.`;
+        regrasObrigatorias = `=== REGRA DE OURO PARA REFATORAÇÃO GLOBAL ===\nO usuário enviou a apresentação atual. Modifique APENAS o que foi pedido, mas **MANTENHA TODOS OS OUTROS SLIDES (SEÇÕES) INTEGRAIS** do código original. NUNCA apague os slides que não foram mencionados. Retorne a apresentação completa.`;
     } else if (isElementRefinement) {
-        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado.`;
+        regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado, preservando rigorosamente o ID original.`;
     } else {
         regrasObrigatorias = `
 === REGRA DE OURO: ARQUITETURA DE SLIDES 16:9 ===
