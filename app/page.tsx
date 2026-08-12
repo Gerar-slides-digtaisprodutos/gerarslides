@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { supabase } from '@/lib/supabase';
 import React, { useEffect, useState } from 'react';
 
+// SCRIPT DO IFRAME
 const SCRIPT_PREVIEW = `<script id="editor-magic-script">
     let modoEdicao = false;
     let elSelecionado = null;
@@ -148,7 +149,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
 
         if (event.data.type === 'DELETE_ELEMENT') {
             let el = document.getElementById(event.data.id);
-            if(el) { el.remove(); elSelecionado = null; sendCleanHtml(); }
+            if(el) {
+                el.remove();
+                elSelecionado = null;
+                sendCleanHtml();
+            }
         }
 
         if (event.data.type === 'MOVE_UP') {
@@ -211,6 +216,7 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 });
                 clone.style.outline = '';
                 clone.style.outlineOffset = '';
+                
                 el.parentNode.insertBefore(clone, el.nextSibling);
                 sendCleanHtml();
             }
@@ -221,14 +227,17 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let newHtml = '';
                 let newId = 'node_' + Math.random().toString(36).substr(2,9);
+                
                 if(event.data.elementType === 'image') {
-                    newHtml = '<img src="[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80)" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
+                    newHtml = '<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=800&q=80" alt="Profissional" class="w-full max-w-md h-auto rounded-lg object-cover my-4 shadow-sm" id="' + newId + '">';
                 } else if(event.data.elementType === 'text') {
                     newHtml = '<p class="text-slate-600 mb-4 text-base leading-relaxed" id="' + newId + '">Novo parágrafo de texto editável para o seu slide.</p>';
                 } else if(event.data.elementType === 'button') {
                     newHtml = '<a href="#" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors my-4 shadow-lg" id="' + newId + '">Clique Aqui</a>';
                 }
+                
                 let isContainer = ['SECTION', 'DIV', 'HEADER', 'FOOTER', 'ARTICLE', 'NAV'].includes(el.tagName);
+                
                 if (isContainer) {
                     el.insertAdjacentHTML('beforeend', newHtml);
                 } else {
@@ -241,9 +250,11 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
         if (event.data.type === 'INJECT_BLOCK') {
             let el = document.getElementById(event.data.id);
             let targetEl = el ? (el.closest('section, header, footer') || el) : document.body;
+            
             let tempDiv = document.createElement('div');
             tempDiv.innerHTML = event.data.html;
             let newBlock = tempDiv.firstElementChild;
+            
             newBlock.querySelectorAll('*').forEach(child => {
                 if(child.id) child.id = 'node_' + Math.random().toString(36).substr(2,9);
             });
@@ -264,14 +275,16 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             let fontName = event.data.font;
             let linkId = 'custom-google-font';
             let fontLink = document.getElementById(linkId);
+            
             if (!fontLink) {
                 fontLink = document.createElement('link');
                 fontLink.id = linkId;
                 fontLink.rel = 'stylesheet';
                 document.head.appendChild(fontLink);
             }
+            
             if (fontName !== 'sans-serif') {
-                fontLink.href = '[https://fonts.googleapis.com/css2?family=](https://fonts.googleapis.com/css2?family=)' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
+                fontLink.href = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@400;500;700;900&display=swap';
                 document.body.style.fontFamily = "'" + fontName + "', sans-serif";
             } else {
                 fontLink.href = '';
@@ -499,7 +512,6 @@ export default function Home() {
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
-  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [fontFamily, setFontFamily] = useState('sans-serif');
   const [modalSEO, setModalSEO] = useState(false);
   const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Slides da apresentação', headScripts: '', bodyScripts: '' });
@@ -522,12 +534,40 @@ export default function Home() {
 
   const moldarApresentacaoHtml = (rawHtml: string) => {
       let clean = purificarHTML(rawHtml);
-      const printStyles = `<style>\n@media print {\n  @page { size: landscape; margin: 0; }\n  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }\n  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }\n}\n</style>`;
+      
+      const printStyles = `<style>
+@media print {
+  @page { size: landscape; margin: 0; }
+  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
+  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }
+}
+</style>`;
+
       if (clean.toLowerCase().includes('<body')) {
-          if (!clean.includes('@media print')) { clean = clean.replace('</head>', printStyles + '\n</head>'); }
+          if (!clean.includes('@media print')) {
+              clean = clean.replace('</head>', printStyles + '\n</head>');
+          }
           return clean;
       }
-      return '<!DOCTYPE html>\n<html lang="pt-BR" class="scroll-smooth">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>\n    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">\n    <link href="[https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap](https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap)" rel="stylesheet">\n    <title>' + seoData.title + '</title>\n' + printStyles + '\n</head>\n<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n        ' + clean + '\n    </div>\n</body>\n</html>';
+      
+      return '<!DOCTYPE html>\n' +
+'<html lang="pt-BR" class="scroll-smooth">\n' +
+'<head>\n' +
+'    <meta charset="UTF-8">\n' +
+'    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'    <script src="https://cdn.tailwindcss.com"></script>\n' +
+'    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n' +
+'    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">\n' +
+'    <title>' + seoData.title + '</title>\n' +
+      printStyles + '\n' +
+'</head>\n' +
+'<body class="antialiased text-slate-800 bg-slate-900" style="font-family: \'' + fontFamily + '\', sans-serif; margin: 0; padding: 0;">\n' +
+'    <div id="presentation-wrapper" class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative">\n' +
+        clean + '\n' +
+'    </div>\n' +
+'</body>\n' +
+'</html>';
   };
 
   const processarRespostaDOM = (data: any) => {
@@ -575,7 +615,7 @@ export default function Home() {
   const atualizarElemento = (field: string, value: string | number | boolean, forceTextUpdate = false) => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate, device: deviceView }, '*');
+      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate, device: 'desktop' }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
@@ -630,14 +670,29 @@ export default function Home() {
       const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
       if(codEl) {
           let htmlAtual = codEl.value;
-          if(htmlAtual.includes('<title>')) { htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>'); } 
-          else { htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>'); }
-          if(htmlAtual.includes('name="description"')) { htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">'); } 
-          else { htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">'); }
+          
+          if(htmlAtual.includes('<title>')) {
+              htmlAtual = htmlAtual.replace(/<title>.*<\/title>/gi, '<title>' + seoData.title + '</title>');
+          } else {
+              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <title>' + seoData.title + '</title>');
+          }
+
+          if(htmlAtual.includes('name="description"')) {
+              htmlAtual = htmlAtual.replace(/<meta name="description"[^>]+>/gi, '<meta name="description" content="' + seoData.description + '">');
+          } else {
+              htmlAtual = htmlAtual.replace('<head>', '<head>\n    <meta name="description" content="' + seoData.description + '">');
+          }
+
           htmlAtual = htmlAtual.replace(/<!-- INJECT_HEAD -->[\\s\\S]*?<!-- END_HEAD -->/gi, '');
           htmlAtual = htmlAtual.replace(/<!-- INJECT_BODY -->[\\s\\S]*?<!-- END_BODY -->/gi, '');
-          if(seoData.headScripts.trim()) { htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>'); }
-          if(seoData.bodyScripts.trim()) { htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>'); }
+
+          if(seoData.headScripts.trim()) {
+              htmlAtual = htmlAtual.replace('</head>', '<!-- INJECT_HEAD -->\n' + seoData.headScripts + '\n<!-- END_HEAD -->\n</head>');
+          }
+          if(seoData.bodyScripts.trim()) {
+              htmlAtual = htmlAtual.replace('</body>', '<!-- INJECT_BODY -->\n' + seoData.bodyScripts + '\n<!-- END_BODY -->\n</body>');
+          }
+
           codEl.value = htmlAtual;
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
           if (iframe) iframe.srcdoc = htmlAtual + SCRIPT_PREVIEW;
@@ -647,7 +702,10 @@ export default function Home() {
   };
 
   const desfazerCodigo = () => {
-    if (historicoCodigo.length === 0) { (window as any).showNotification("Nenhuma alteração para desfazer.", "error"); return; }
+    if (historicoCodigo.length === 0) {
+        (window as any).showNotification("Nenhuma alteração para desfazer.", "error");
+        return;
+    }
     const novoHistorico = [...historicoCodigo];
     const estadoAnterior = novoHistorico.pop();
     setHistoricoCodigo(novoHistorico);
@@ -662,6 +720,7 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = moldarApresentacaoHtml(codigoExterno);
+
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
@@ -710,20 +769,16 @@ export default function Home() {
   };
 
   const chamarMotorIA = async (systemInstructionText: string, promptParts: any[], isElementRefinement = false, useGrok = false) => {
-    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo o slide...' : 'A IA está estruturando o projeto...', processing: true });
+    setStatusApis({ texto: isElementRefinement ? 'A IA está reescrevendo o slide...' : 'A IA está estruturando a apresentação...', processing: true });
     try {
-      const dinamicaStyle = (document.getElementById('dinamicaSite') as HTMLSelectElement)?.value || 'estatico';
       const response = await fetch('/api/gerar', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify({ 
               systemInstruction: systemInstructionText, 
               promptParts, 
-              imageStyle: 'real', 
-              dinamica: dinamicaStyle, 
               isElementRefinement, 
-              isGeminiForced: !isElementRefinement,
-              useGrok: textEngine === 'grok' || useGrok
+              useGrok
           }) 
       });
       const responseText = await response.text();
@@ -741,22 +796,29 @@ export default function Home() {
   const executarGeracaoSiteHibrida = async () => {
     const content = productContent.trim();
     if (uploadedImages.length === 0 && !content) { 
-        (window as any).showNotification('Anexe uma imagem OU digite o tema/conteúdo do projeto.', 'error'); 
+        (window as any).showNotification('Anexe uma imagem OU digite o tema/roteiro da apresentação.', 'error'); 
         return; 
     }
     
     let promptParts: any[] = [];
-    let commandText = 'Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). Utilize imagens fotográficas humanas realistas.\n\n';
     
-    if (content) { commandText += 'CONTEÚDO / TEMA:\n"""\n' + content + '\n"""\n\n'; }
+    // Inclui a diretriz de estilo selecionada no comando
+    let estiloPrompt = "Apresentação limpa, moderna e altamente profissional.";
+    if (nichoEstilo === 'premium') estiloPrompt = "Aparência sofisticada e de alto padrão (Premium). Use muita simetria e elegância.";
+    if (nichoEstilo === 'agressivo') estiloPrompt = "Foco total em Conversão e Vendas de Palco. Use alto contraste, cores fortes e dados diretos ao ponto.";
+    if (nichoEstilo === 'terapia') estiloPrompt = "Aparência calma, leve e focada na saúde/psicologia. Use muito espaço em branco, bordas suaves e design acolhedor.";
+
+    let commandText = `Gere uma Apresentação de Slides completa (Pitch Deck ou Aula). \nESTILO DE DESIGN: ${estiloPrompt}\n\n`;
+    
+    if (content) { commandText += 'CONTEÚDO / ROTEIRO DOS SLIDES:\n"""\n' + content + '\n"""\n\n'; }
     if (uploadedImages.length > 0) {
-        commandText += 'Use a IMAGEM ANEXADA como base de identidade visual.';
+        commandText += 'Use a IMAGEM ANEXADA como base de identidade visual e paleta de cores absolutas.';
         uploadedImages.forEach(img => promptParts.push({ inlineData: { mimeType: img.mimeType, data: img.data } }));
     }
     promptParts.unshift({ text: commandText });
     
     const data = await chamarMotorIA(
-        'Especialista Slides: Crie HTML de slides 16:9 em tags <section>', 
+        'Especialista Slides: Crie HTML de slides 16:9 em tags <section>. Mantenha o conteúdo denso e profissional. Cada slide deve preencher a tela inteira.', 
         promptParts, 
         false, 
         textEngine === 'grok'
@@ -796,7 +858,7 @@ export default function Home() {
 
       try {
           const jsonPrompt = 'Resuma o seguinte texto em apenas 2 palavras em INGLÊS que sirvam como termo de busca para o Unsplash focada em ' + contextModifier + '. Texto: "' + termoContexto + '". Devolva APENAS o JSON EXATO: {"keyword": "palavra1,palavra2"}';
-          const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, isGeminiForced: false }) });
+          const iaRes = await fetch('/api/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ systemInstruction: "Especialista Unsplash.", promptParts: [{text: jsonPrompt}], isElementRefinement: true, useGrok: false }) });
           const iaData = await iaRes.json();
           let keywordFinal = "professional business";
           if(iaData && iaData.html) {
@@ -811,7 +873,7 @@ export default function Home() {
           if(data && data.url) { atualizarElemento(isBackground ? 'bgImage' : 'src', data.url); (window as any).showNotification("Foto aplicada!", "success"); 
           } else { throw new Error("API não retornou foto"); }
       } catch(err) { 
-          const fallback = '[https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=](https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=)' + w + '&q=80'; 
+          const fallback = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?fit=crop&w=' + w + '&q=80'; 
           atualizarElemento(isBackground ? 'bgImage' : 'src', fallback); (window as any).showNotification("Usando imagem padrão por limite de cota.", "error"); 
       }
   };
@@ -943,15 +1005,15 @@ export default function Home() {
 
         if (!(window as any).html2canvas) {
             const scriptCanvas = document.createElement('script');
-            scriptCanvas.src = "[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)";
+            scriptCanvas.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
             document.head.appendChild(scriptCanvas);
         }
         if (!(window as any).PptxGenJS) {
             const scriptZip = document.createElement('script');
-            scriptZip.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js)";
+            scriptZip.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js";
             document.head.appendChild(scriptZip);
             const scriptPptx = document.createElement('script');
-            scriptPptx.src = "[https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js](https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js)";
+            scriptPptx.src = "https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js";
             document.head.appendChild(scriptPptx);
         }
 
@@ -975,7 +1037,7 @@ export default function Home() {
                     slide.addImage({ data: imgData, x: 0, y: 0, w: '100%', h: '100%' });
                 }
 
-                const nomeArquivo = siteEditando ? siteEditando.slug : 'Meu_Projeto';
+                const nomeArquivo = siteEditando ? siteEditando.slug : 'Minha_Apresentacao';
                 pptx.writeFile({ fileName: nomeArquivo + '.pptx' });
                 
                 (window as any).showNotification('Download do PPTX concluído!', 'success');
@@ -1008,7 +1070,7 @@ export default function Home() {
 
   return (
     <div className="h-screen overflow-hidden flex relative bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100">
-      <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       <style dangerouslySetInnerHTML={{__html: `
         .input-standard { width: 100%; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; background-color: #f8fafc; font-size: 0.75rem; outline: none; color: #334155; transition: all 0.2s; font-weight: 500;}
         .input-standard:focus { border-color: #6366f1; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
@@ -1152,7 +1214,6 @@ export default function Home() {
                                   <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
-                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
@@ -1544,7 +1605,7 @@ export default function Home() {
                               </div>
 
                               <button onClick={executarGeracaoSiteHibrida} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2">
-                                  <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Apresentação
+                                  <i className="fas fa-rocket text-yellow-300 text-lg"></i> Gerar Apresentação Agora
                               </button>
                           </div>
                           
@@ -1562,134 +1623,6 @@ export default function Home() {
               )}
           </div>
       </div>
-
-      {/* PAINEL DIREITO (RESTAURADO E COMPLETO) */}
-      <div className="flex-grow flex flex-col bg-slate-200 relative min-w-0">
-          
-          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-10">
-              <div className="flex items-center gap-3 md:gap-5">
-                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-[11px] bg-white text-indigo-700 shadow-sm transition">Ver Slides</button>
-                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
-                  </div>
-                  
-                  {/* SIMULADOR DE DISPOSITIVOS */}
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <div className="hidden md:flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      <button onClick={() => setDeviceView('desktop')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'desktop' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="16:9 Slide Monitor"><i className="fas fa-desktop text-xs"></i></button>
-                      <button onClick={() => setDeviceView('tablet')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'tablet' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Visão Tablet"><i className="fas fa-tablet-alt text-xs"></i></button>
-                      <button onClick={() => setDeviceView('mobile')} className={'w-8 h-7 flex items-center justify-center rounded transition ' + (deviceView === 'mobile' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800')} title="Vertical Mobile"><i className="fas fa-mobile-alt text-xs"></i></button>
-                  </div>
-
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-file-import"></i> Importar HTML
-                  </button>
-                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-xs font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
-                      <i className="fas fa-cog"></i> Ajustes
-                  </button>
-                  
-                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
-                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
-              </div>
-
-              <div className="flex items-center gap-3 md:gap-4">
-                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-xs px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Minhas Apresentações</button>
-                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
-                  
-                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
-                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
-                      <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
-                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-xs px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
-                  </div>
-                  
-                  {siteEditando ? (
-                      <div className="flex gap-2">
-                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition border border-slate-200">Cancelar</button>
-                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
-                      </div>
-                  ) : (
-                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
-                  )}
-              </div>
-          </div>
-          
-          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar">
-              {modoInspetor && (
-                  <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-8 py-3 rounded-full shadow-2xl shadow-indigo-500/50 font-black text-xs uppercase tracking-widest flex items-center gap-3 border-[3px] border-indigo-400 animate-bounce pointer-events-none">
-                      <i className="fas fa-mouse-pointer text-yellow-300"></i> Pode Clicar e Editar!
-                  </div>
-              )}
-              
-              <div className={'mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white ' + (modoInspetor ? 'ring-4 ring-indigo-500/30 rounded-xl' : 'border border-slate-300') + ' ' + (deviceView === 'mobile' ? 'w-[400px] h-[711px] shrink-0' : deviceView === 'tablet' ? 'w-[800px] h-full shrink-0' : 'aspect-video w-full max-w-[1280px]')}>
-                  {modoInspetor && (
-                      <div className="h-7 w-full bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5 flex-shrink-0">
-                          <div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div><div className="w-3 h-3 rounded-full bg-slate-300"></div>
-                          <div className="mx-auto bg-white border border-slate-200 text-[9px] text-slate-500 px-10 py-0.5 rounded-full font-bold">Visualização da Apresentação</div>
-                      </div>
-                  )}
-                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin allow-modals" title="Navegador do Site"></iframe>
-                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
-                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
-                          onBlur={(e) => {
-                              const newHtml = e.target.value;
-                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
-                              setHistoricoCodigo(prev => {
-                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
-                                  return [...prev, newHtml];
-                              });
-                          }}
-                      ></textarea>
-                  </div>
-              </div>
-          </div>
-      </div>
-
-      {modalMeusSitesAberto && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Apresentações Salvas</h2>
-              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
-            </div>
-            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
-              {carregandoSites ? <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando apresentações...</p></div> : listaSites.length === 0 ? <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Você ainda não tem nenhuma apresentação.</p><p className="text-sm text-slate-400 mt-2">Gere seus primeiros slides e publique para aparecer aqui!</p></div> : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {sitesAtuais.map((site) => {
-                        const linkUrl = window.location.origin + '/' + site.slug;
-                        return (
-                          <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
-                            <h3 className="font-black text-base text-slate-800 mb-3 truncate group-hover:text-indigo-700 transition-colors">{site.titulo}</h3>
-                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
-                                <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
-                                <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
-                            </div>
-                            <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
-                              <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link Visualizador</a>
-                              <div className="flex gap-2">
-                                <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Abrir no Painel</button>
-                                <button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition" title="Deletar Projeto"><i className="fas fa-trash"></i></button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {totalPaginas > 1 && (
-                      <div className="flex justify-center items-center gap-4 mt-8 pt-6">
-                        <button onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm"><i className="fas fa-chevron-left"></i> Voltar</button>
-                        <span className="text-xs font-black text-slate-500 tracking-widest uppercase bg-white px-4 py-2 rounded-lg border border-slate-200">Página {paginaAtual} de {totalPaginas}</span>
-                        <button onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-lg disabled:opacity-50 hover:bg-slate-50 transition shadow-sm">Próxima <i className="fas fa-chevron-right ml-1"></i></button>
-                      </div>
-                    )}
-                  </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
