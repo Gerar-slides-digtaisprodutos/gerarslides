@@ -22,8 +22,9 @@ export async function POST(req: Request) {
         if (part.text) textoDoPrompt += part.text + "\n";
     }
 
+    // A MÁGICA DAS CORES: Instrui a IA a alterar o CSS baseado na imagem
     const instrucaoImagem = temImagem 
-        ? "\n🚨 ATENÇÃO MÁXIMA E ABSOLUTA: O usuário anexou uma imagem de referência visual. VOCÊ DEVE COPIAR FIELMENTE AS CORES, A PALETA, O TOM E O ESTILO VISUAL DESSA IMAGEM PARA TODO O EBOOK. Extraia também o tema central da imagem para estruturar os capítulos." 
+        ? "\n🚨 ATENÇÃO MÁXIMA E ABSOLUTA: O usuário anexou uma imagem de referência visual. VOCÊ DEVE EXTRAIR A PALETA DE CORES DA IMAGEM E MODIFICAR O BLOCO <style> SUBSTITUINDO AS VARIÁVEIS no :root { --primary-color: #cor_escura_da_imagem; --secondary-color: #cor_de_destaque; --accent-color: #cor_secundaria; } PARA QUE O EBOOK COMBINE 100% COM A IMAGEM. Extraia também o tema central da imagem para estruturar os capítulos." 
         : "";
 
     let regrasObrigatorias = "";
@@ -32,8 +33,8 @@ export async function POST(req: Request) {
 🚨 REGRA ABSOLUTA: Use a sintaxe exata: src="[UNSPLASH: resolucao: keywords_em_ingles]"
 🚨 RESTRIÇÃO DE ESTILO: Utilize APENAS fotografia humana realista. É estritamente PROIBIDO usar desenhos, gráficos animados ou elementos sci-fi.
 Tamanhos:
-- 1280x720 (Paisagem): Para fundos ou imagens de topo.
-- 800x1200 (Retrato): Para fotos de pessoas, capas ou retratos conceituais.
+- 1280x720 (Paisagem): Para imagens no meio do texto ou fundos horizontais.
+- 800x1200 (Retrato): Para fundos inteiros de capa de capítulo.
 `;
 
     if (isSiteRefinement) {
@@ -42,7 +43,7 @@ Tamanhos:
         regrasObrigatorias = `=== MICRO-OTIMIZAÇÃO ===\nDevolva APENAS a Tag HTML do elemento perfeitamente otimizado.`;
     } else if (isEbook) {
         const formatoLivro = formato || 'a4'; 
-        const estiloEbookEscolhido = estiloCapitulo || 'exclusiva';
+        const estiloEbookEscolhido = estiloCapitulo || 'icone_centralizado';
 
         let widthStr = '210mm'; let heightStr = '297mm';
         if (formatoLivro === '14x21') { widthStr = '140mm'; heightStr = '210mm'; }
@@ -53,21 +54,25 @@ Tamanhos:
 #meu-ebook { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 30px; padding: 20px 0; }
 .page-container { width: ${widthStr}; height: ${heightStr}; max-height: ${heightStr}; background: var(--bg-color); box-sizing: border-box; position: relative; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); flex-shrink: 0; }
 .normal-page { padding: 22mm 20mm 28mm 20mm; display: flex; flex-direction: column; }
-.normal-page::after { content: ""; position: absolute; top: 5mm; bottom: 5mm; left: 6mm; right: 6mm; border: 1px solid rgba(29, 92, 150, 0.5); pointer-events: none; z-index: 10; }
-.normal-page::before { content: ""; position: absolute; top: 6.5mm; bottom: 6.5mm; left: 7.5mm; right: 7.5mm; border: 0.5px solid rgba(8, 12, 22, 0.15); pointer-events: none; z-index: 10; }
+.normal-page::after { content: ""; position: absolute; top: 5mm; bottom: 5mm; left: 6mm; right: 6mm; border: 1px solid var(--secondary-color); opacity: 0.3; pointer-events: none; z-index: 10; }
+.normal-page::before { content: ""; position: absolute; top: 6.5mm; bottom: 6.5mm; left: 7.5mm; right: 7.5mm; border: 0.5px solid var(--primary-color); opacity: 0.15; pointer-events: none; z-index: 10; }
 .page-header { position: absolute; top: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 10pt; color: var(--primary-color); border-bottom: 1px solid var(--secondary-color); padding-bottom: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; z-index: 20; }
 .page-footer { position: absolute; bottom: 10mm; left: 20mm; right: 20mm; display: flex; justify-content: space-between; font-size: 10pt; color: var(--primary-color); border-top: 1px solid var(--secondary-color); padding-top: 5px; z-index: 20; }
 h1, h2, h3, h4 { font-family: var(--font-heading); color: var(--primary-color); margin-top: 0; margin-bottom: 1.5rem !important; }
 p { font-size: 12pt !important; line-height: 1.5; text-align: justify; text-indent: 25px; margin-top: 0 !important; margin-bottom: 15px; color: var(--text-color); }
 img { max-width: 100%; height: auto; border-radius: 8px; }
-blockquote.quote { font-size: 11.5pt; font-style: italic; font-family: var(--font-heading); border-left: 5px solid var(--secondary-color); background: rgba(29, 92, 150, 0.05); padding: 12px 18px; margin: 15px 0 20px 0; color: var(--primary-color); }
+blockquote.quote { font-size: 11.5pt; font-style: italic; font-family: var(--font-heading); border-left: 5px solid var(--secondary-color); background: rgba(0,0,0,0.03); padding: 12px 18px; margin: 15px 0 20px 0; color: var(--primary-color); border-radius: 0 8px 8px 0;}
 
-/* ESTILOS DE CAPÍTULO DINÂMICOS CONFORME SUA ESCOLHA NO PAINEL */
-.chapter-cover-exclusive { background-color: #0b1120 !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #ffffff; padding: 20mm !important; }
-.chapter-cover-exclusive .chapter-number { font-family: var(--font-body); font-size: 14pt; letter-spacing: 5px; text-transform: uppercase; color: #3b82f6; margin-bottom: 20px; font-weight: 700; }
+/* ESTILOS DE CAPÍTULO DINÂMICOS */
+.chapter-cover-exclusive { background-color: var(--primary-color) !important; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #ffffff; padding: 20mm !important; }
+.chapter-cover-exclusive .chapter-icon { font-size: 60px; color: var(--secondary-color); margin-bottom: 20px; }
+.chapter-cover-exclusive .chapter-number { font-family: var(--font-body); font-size: 14pt; letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 20px; font-weight: 700; }
 .chapter-cover-exclusive .chapter-title { font-family: var(--font-heading); font-size: 38pt; color: #ffffff; line-height: 1.2; max-width: 90%; margin: 0 auto; font-weight: 700; }
 
-.chapter-inline-container { padding: 22mm 20mm 28mm 20mm; display: flex; flex-direction: column; }
+.chapter-cover-bg { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #ffffff; padding: 20mm !important; background-size: cover; background-position: center; position: relative; z-index: 1;}
+.chapter-cover-bg::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.65); z-index: -1; }
+.chapter-cover-bg .chapter-title { font-family: var(--font-heading); font-size: 42pt; color: #ffffff; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
+
 .chapter-inline-title { font-family: var(--font-heading); font-size: 26pt; color: var(--primary-color); margin-bottom: 15px !important; text-align: left; font-weight: 700; }
 .chapter-hero-image { width: 100%; height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
@@ -76,14 +81,16 @@ blockquote.quote { font-size: 11.5pt; font-style: italic; font-family: var(--fon
 </style>`;
 
         let instrucaoEstiloCapitulo = "";
-        if (estiloEbookEscolhido === 'exclusiva') {
-            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página exclusiva escura (<div class='page-container chapter-cover-exclusive'>) para o título do capítulo, e o texto na página seguinte.";
+        if (estiloEbookEscolhido === 'icone_centralizado') {
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página exclusiva (<div class='page-container chapter-cover-exclusive'>) com um grande ícone FontAwesome <i> combinando com o tema, o número do capítulo e o título do capítulo. O texto inicia na página seguinte em uma div normal-page.";
         } else if (estiloEbookEscolhido === 'imagem_abaixo') {
-            instrucaoEstiloCapitulo = "Estilo de Capítulo: Coloque o Título do Capítulo e logo abaixo uma imagem gerada por IA (<img src='[UNSPLASH: 1280x720: keyword]' class='chapter-hero-image'>) na mesma página de início do texto.";
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Não use páginas exclusivas de capa de capítulo. Coloque o Título do Capítulo (<h1 class='chapter-inline-title'>) no topo da página de texto e, LOGO ABAIXO dele, uma imagem gerada por IA (<img src='[UNSPLASH: 1280x720: keyword]' class='chapter-hero-image'>), seguida pelo texto do miolo.";
         } else if (estiloEbookEscolhido === 'fundo_total') {
-            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página de capa de capítulo exclusiva com uma imagem de fundo total em marca d'água escura e o título centralizado.";
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página exclusiva (<div class='page-container chapter-cover-bg' style='background-image: url([UNSPLASH: 800x1200: keyword]);'>) com o título centralizado sobre a imagem de fundo. O texto inicia na página seguinte em uma div normal-page.";
+        } else if (estiloEbookEscolhido === 'exclusiva_imagem_depois') {
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Crie uma página de título exclusiva simples (<div class='page-container chapter-cover-exclusive'>) SEM IMAGEM. NA PÁGINA SEGUINTE, inicie com uma imagem de IA (<img src='[UNSPLASH: 1280x720: keyword]' class='chapter-hero-image'>) antes de começar os parágrafos de texto.";
         } else {
-            instrucaoEstiloCapitulo = "Estilo de Capítulo: Alterne entre página exclusiva de título com ícone e páginas com imagem abaixo do título.";
+            instrucaoEstiloCapitulo = "Estilo de Capítulo: Alterne de forma mista as capas com ícone e as páginas com título e imagem abaixo.";
         }
 
         regrasObrigatorias = `
@@ -97,8 +104,8 @@ ${instrucaoEstiloCapitulo}
 
 3. DIRETRIZ DE ESTRUTURA:
 - Envolva todas as páginas na tag <div id="meu-ebook">.
-- Garanta que todos os parágrafos tenham o tamanho de fonte padronizado em 12pt.
-- Crie capítulos estruturados, densos e bem divididos.
+- O texto do miolo deve usar SEMPRE: <div class="page-container normal-page">
+- Crie capítulos literários, bem escritos, densos e bem divididos.
 
 ${instrucaoImagem}
 ${regraImagens}
