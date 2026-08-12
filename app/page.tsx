@@ -889,13 +889,29 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
+    setModalMeusSitesAberto(true); // 1. Abre a janela na hora para dar feedback
     setCarregandoSites(true);
+    
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const { data, error } = await supabase.from('apresentacoes_salvas').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-    if (!error) { setListaSites(data || []); setPaginaAtual(1); }
+    if (!session) { 
+        alert("Sua sessão expirou ou você não está logado.");
+        setCarregandoSites(false);
+        return; 
+    }
+    
+    // IMPORTANTE: Se o seu banco de dados usar o nome antigo, troque 'apresentacoes_salvas' por 'sites_salvos'
+    const { data, error } = await supabase.from('apresentacoes_salvas')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+        
+    if (error) { 
+        alert("Erro no Supabase: " + error.message); 
+    } else { 
+        setListaSites(data || []); 
+        setPaginaAtual(1); 
+    }
     setCarregandoSites(false);
-    setModalMeusSitesAberto(true);
   };
 
   const deletarSite = async (id: string, slug: string) => {
@@ -1058,18 +1074,45 @@ export default function Home() {
         }, 1500);
     };
 
-    (window as any).handlePublicarSite = async () => {
+   (window as any).handlePublicarSite = async () => {
       const htmlContent = (document.getElementById('codigoGerado') as HTMLTextAreaElement)?.value;
-      if (!htmlContent) { (window as any).showNotification('Você precisa criar a apresentação primeiro.', 'error'); return; }
+      if (!htmlContent || htmlContent.length < 100) { 
+          (window as any).showNotification('Você precisa criar a apresentação primeiro.', 'error'); 
+          return; 
+      }
+      
       let cleanHtml = purificarHTML(htmlContent);
-      if (siteEditando) { await supabase.from('apresentacoes_salvas').update({ html_content: cleanHtml }).eq('id', siteEditando.id); (window as any).showNotification('Apresentação atualizada com sucesso!', 'success'); return; }
-      const nome = prompt('Qual será o nome da sua Apresentação? (Vai aparecer no Link Público):'); if (!nome) return; 
-      let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { alert('Sua conta desconectou. Entre novamente.'); return; }
-      await supabase.from('apresentacoes_salvas').insert([{ user_id: session?.user.id, slug, titulo: nome, html_content: cleanHtml }]);
+      
+      if (!session) { 
+          alert('Sua conta desconectou. Faça login novamente.'); 
+          return; 
+      }
+
+      if (siteEditando) { 
+          const { error } = await supabase.from('apresentacoes_salvas').update({ html_content: cleanHtml }).eq('id', siteEditando.id); 
+          if (error) { alert('Erro ao salvar: ' + error.message); return; }
+          (window as any).showNotification('Apresentação atualizada com sucesso!', 'success'); 
+          carregarMeusSites(); // Abre o menu atualizado
+          return; 
+      }
+      
+      const nome = prompt('Qual será o nome da sua Apresentação? (Vai aparecer no Link Público):'); 
+      if (!nome) return; 
+      
+      let slug = nome.trim().toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || nanoid(6); 
+      
+      const { error } = await supabase.from('apresentacoes_salvas').insert([{ user_id: session.user.id, slug, titulo: nome, html_content: cleanHtml }]);
+      
+      if (error) {
+          alert('Ocorreu um erro no Banco de Dados: ' + error.message + '\n\n(Aviso: Se disser que a tabela não existe, vá no código e troque "apresentacoes_salvas" para "sites_salvos")');
+          return;
+      }
+
       navigator.clipboard.writeText(window.location.origin + '/' + slug);
       alert('Parabéns! Sua Apresentação já tem um link público online.\nLink copiado:\n' + window.location.origin + '/' + slug);
+      
+      carregarMeusSites(); // Chama a janela na hora para mostrar o novo link!
     };
   }, [siteEditando]); 
 
