@@ -48,15 +48,18 @@ ${regraImagens}
 
     const systemInstructionFinal = (systemInstruction || '') + '\n\n' + regrasObrigatorias;
     let htmlCode = '';
-    let provedorTextoUsado = 'Google Gemini';
+    let provedorTextoUsado = '';
 
     if (useGrok) {
         provedorTextoUsado = 'Groq (Llama 3.3)';
-        const apiKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
+        const apiKey = process.env.GROQ_API_KEY;
         
-        const isXAi = apiKey?.startsWith('xai-');
-        const url = isXAi ? "https://api.x.ai/v1/chat/completions" : "https://api.groq.com/openai/v1/chat/completions";
-        const model = isXAi ? "grok-2-1212" : "llama-3.3-70b-versatile";
+        if (!apiKey) {
+            throw new Error("Chave GROQ_API_KEY não encontrada nas variáveis de ambiente.");
+        }
+
+        const url = "https://api.groq.com/openai/v1/chat/completions";
+        const model = "llama-3.3-70b-versatile";
 
         const groqResponse = await fetch(url, {
             method: "POST", 
@@ -77,28 +80,38 @@ ${regraImagens}
 
         if (!groqResponse.ok) {
             const errText = await groqResponse.text();
-            throw new Error(`Erro na API do Groq/Grok (${groqResponse.status}): ${errText}`);
+            throw new Error(`Erro na API do Groq (${groqResponse.status}): ${errText}`);
         }
+        
         const groqData = await groqResponse.json();
         htmlCode = extrairHtmlDeJson(groqData.choices[0].message.content);
+        
     } else {
+        provedorTextoUsado = 'Google Gemini 3.6 Flash';
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
+            model: "gemini-3.6-flash", 
             systemInstruction: systemInstructionFinal, 
             safetySettings 
         });
+        
         const result = await model.generateContent({ 
             contents: [{ role: "user", parts: promptParts }], 
             generationConfig: { temperature: isSiteRefinement ? 0.3 : 0.6 } 
         });
+        
         htmlCode = extrairHtmlDeJson(result.response.text());
     }
 
-    if (!htmlCode || htmlCode.length < 50) throw new Error("A Inteligência Artificial falhou em gerar o código HTML dos slides.");
+    if (!htmlCode || htmlCode.length < 50) {
+        throw new Error("A Inteligência Artificial falhou em gerar o código HTML dos slides.");
+    }
 
+    // Processamento de Imagens Unsplash
     const regexImgReq = /\[UNSPLASH:\s*(\d+x\d+)\s*:\s*([^\]]+)\]/g;
-    let match; let urlsToReplace: { fullMatch: string; dimensao: string; keywords: string }[] = [];
+    let match; 
+    let urlsToReplace: { fullMatch: string; dimensao: string; keywords: string }[] = [];
+    
     while ((match = regexImgReq.exec(htmlCode)) !== null) { 
         urlsToReplace.push({ fullMatch: match[0], dimensao: match[1], keywords: match[2] }); 
     }
@@ -108,8 +121,10 @@ ${regraImagens}
             let orient = 'landscape';
             if (item.dimensao === '800x1200') orient = 'portrait';
             if (item.dimensao === '800x800') orient = 'squarish';
+            
             const kwFormatada = encodeURIComponent(item.keywords.trim());
             let imagemFinal = `https://images.unsplash.com/photo-1497215728101-856f4ea42174?fit=crop&w=1200&q=80`; 
+            
             try {
                 const uRes = await fetch(`https://api.unsplash.com/search/photos?query=${kwFormatada}&per_page=10&orientation=${orient}&client_id=${process.env.UNSPLASH_ACCESS_KEY}`);
                 if (uRes.ok) {
@@ -118,7 +133,9 @@ ${regraImagens}
                         imagemFinal = uData.results[Math.floor(Math.random() * uData.results.length)].urls.regular;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                // Ignora silenciosamente e mantém o fallback
+            }
             htmlCode = htmlCode.replace(item.fullMatch, imagemFinal);
         }
     } else {
@@ -134,19 +151,31 @@ ${regraImagens}
 
 function extrairHtmlDeJson(text: string): string {
   try {
-      let clean = text.replace(/```json/gi, '').replace(/```html/gi, '').replace(/```/g, '').trim();
-      const start = clean.indexOf('{'); const end = clean.lastIndexOf('}');
+      // REGEX CORRIGIDO: Sem quebras de linha que travam o TypeScript
+      let clean = text.replace(/(\`\`\`html|\`\`\`json|\`\`\`)/gi, '').trim();
+      
+      const start = clean.indexOf('{'); 
+      const end = clean.lastIndexOf('}');
+      
       if (start !== -1 && end !== -1) {
           const jsonString = clean.substring(start, end + 1); 
           const json = JSON.parse(jsonString);
           let extracted = json.codigo_html || json.html || Object.values(json)[0] || jsonString;
-          if (typeof extracted === 'string') extracted = extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
+          
+          if (typeof extracted === 'string') {
+              extracted = extracted.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\t/g, '\t');
+          }
           return extracted;
       }
       return clean;
   } catch (e) {
-      let fallback = text.replace(/```(html|json)?/gi, '').replace(/```/g, '').trim();
-      if (fallback.toLowerCase().startsWith('json')) fallback = fallback.substring(4).trim();
+      // REGEX CORRIGIDO: Sem quebras de linha que travam o TypeScript
+      let fallback = text.replace(/(\`\`\`html|\`\`\`json|\`\`\`)/gi, '').trim();
+      
+      if (fallback.toLowerCase().startsWith('json')) {
+          fallback = fallback.substring(4).trim();
+      }
+      
       if (fallback.startsWith('{') && fallback.includes('"codigo_html":')) {
           const idx = fallback.indexOf('"codigo_html":');
           if (idx !== -1) {
