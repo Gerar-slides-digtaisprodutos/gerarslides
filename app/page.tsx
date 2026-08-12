@@ -297,15 +297,19 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
             if(el) {
                 let isImg = el.tagName === 'IMG';
                 let p = event.data.device === 'mobile' ? 'max-md:' : '';
-                let escP = p ? 'max-md\\:' : '';
 
                 if(event.data.text !== undefined && event.data.forceTextUpdate) el.innerText = event.data.text;
                 if(event.data.src !== undefined) el.src = event.data.src;
                 if(event.data.textColor !== undefined) el.style.color = event.data.textColor;
+
+                const safeRemove = (arr) => {
+                    arr.forEach(c => el.classList.remove(c));
+                    arr.forEach(c => el.classList.remove('max-md:' + c));
+                };
                 
                 if(event.data.fontSize !== undefined) {
                     el.style.fontSize = ''; 
-                    el.className = el.className.replace(new RegExp('\\b' + escP + 'text-\\[\\d+px\\]\\b', 'g'), '').trim();
+                    Array.from(el.classList).forEach(c => { if(c.startsWith('text-[') || c.startsWith('max-md:text-[')) el.classList.remove(c); });
                     if(event.data.fontSize) el.classList.add(p + 'text-[' + event.data.fontSize + 'px]');
                 }
                 
@@ -332,10 +336,13 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if (!isImg) {
-                    let cBgColor = el.dataset.rawBgColor || rgbToHex(window.getComputedStyle(el).backgroundColor);
-                    if (!cBgColor || cBgColor === '') cBgColor = '#ffffff'; 
+                    let cBgColor = el.dataset.rawBgColor || window.getComputedStyle(el).backgroundColor;
+                    if (!cBgColor || cBgColor === '' || cBgColor === 'transparent') cBgColor = '#ffffff'; 
                     let cBgImage = el.dataset.rawBgImage;
-                    if (cBgImage === undefined) { let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); cBgImage = match ? match[1] : ''; }
+                    if (cBgImage === undefined) { 
+                        let match = (el.style.backgroundImage || '').match(/url\\(['"]?([^'"]+)['"]?\\)/); 
+                        cBgImage = match ? match[1] : ''; 
+                    }
                     let cOpacity = parseFloat(el.dataset.bgOpacity); if (isNaN(cOpacity)) cOpacity = 1;
 
                     let r = 255, g = 255, b = 255;
@@ -343,6 +350,9 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                         let hex = cBgColor.replace('#', '');
                         if (hex.length === 3) hex = hex.split('').map(x => x+x).join('');
                         if (hex.length === 6) { r = parseInt(hex.substring(0,2), 16); g = parseInt(hex.substring(2,4), 16); b = parseInt(hex.substring(4,6), 16); }
+                    } else if (cBgColor.startsWith('rgb')) {
+                        let res = cBgColor.match(/\\d+/g);
+                        if(res && res.length >= 3) { r = res[0]; g = res[1]; b = res[2]; }
                     }
 
                     let rgbaStr = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + cOpacity + ')';
@@ -363,39 +373,41 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.paddingX !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(px-\\d+|px-\\[.*?\\]|w-full|text-center)\\b', 'g'), '').trim();
+                    safeRemove(['px-4','px-8','px-12','px-16','px-24','w-full','text-center']);
+                    Array.from(el.classList).forEach(c => { if(c.startsWith('px-[') || c.startsWith('max-md:px-[')) el.classList.remove(c); });
                     if(event.data.paddingX && event.data.paddingX !== 'none') { event.data.paddingX.split(' ').forEach(cls => el.classList.add(p + cls)); }
                 }
                 if(event.data.paddingY !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(py-\\d+|py-\\[.*?\\])\\b', 'g'), '').trim();
+                    safeRemove(['py-2','py-4','py-6','py-8','py-12']);
+                    Array.from(el.classList).forEach(c => { if(c.startsWith('py-[') || c.startsWith('max-md:py-[')) el.classList.remove(c); });
                     if(event.data.paddingY && event.data.paddingY !== 'none') el.classList.add(p + event.data.paddingY);
                 }
                 if(event.data.rounded !== undefined) {
-                    el.className = el.className.replace(/\\brounded\\b|\\brounded-(sm|md|lg|xl|2xl|3xl|full|none)\\b/g, '').trim();
+                    safeRemove(['rounded-none','rounded-sm','rounded-md','rounded-lg','rounded-xl','rounded-2xl','rounded-3xl','rounded-full']);
                     if(event.data.rounded && event.data.rounded !== 'none') el.classList.add(event.data.rounded);
                 }
                 if(event.data.shadow !== undefined) {
-                    el.className = el.className.replace(/\\bshadow\\b|\\bshadow-(sm|md|lg|xl|2xl|none|inner)\\b|\\bshadow-[a-z]+-500\\/50\\b/g, '').trim();
+                    safeRemove(['shadow','shadow-sm','shadow-md','shadow-lg','shadow-xl','shadow-2xl','shadow-none','shadow-inner','shadow-indigo-500/50']);
                     if(event.data.shadow && event.data.shadow !== 'none') { event.data.shadow.split(' ').forEach(cls => el.classList.add(cls)); }
                 }
                 if(event.data.borderW !== undefined) {
-                    el.className = el.className.replace(/\\bborder\\b|\\bborder-\\d+\\b/g, '').trim();
+                    safeRemove(['border','border-0','border-2','border-4','border-8']);
                     if(event.data.borderW && event.data.borderW !== 'none') { el.classList.add(event.data.borderW); }
                 }
 
                 if(event.data.textAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(text-left|text-center|text-right|text-justify)\\b', 'g'), '').trim();
+                    safeRemove(['text-left','text-center','text-right','text-justify']);
                     if(event.data.textAlign) el.classList.add(p + event.data.textAlign);
                 }
 
                 if(event.data.boxAlign !== undefined) {
-                    el.className = el.className.replace(new RegExp('\\b' + escP + '(mx-auto|ml-auto|mr-auto|self-center|self-start|self-end|justify-self-center|justify-self-start|justify-self-end)\\b', 'g'), '').trim();
+                    safeRemove(['mx-auto','ml-auto','mr-auto','self-center','self-start','self-end','justify-self-center','justify-self-start','justify-self-end','justify-start','justify-center','justify-end']);
                     if(event.data.boxAlign === 'center') el.classList.add(p+'mx-auto', p+'self-center', p+'justify-self-center');
                     if(event.data.boxAlign === 'right') el.classList.add(p+'ml-auto', p+'self-end', p+'justify-self-end');
                     if(event.data.boxAlign === 'left') el.classList.add(p+'mr-auto', p+'self-start', p+'justify-self-start');
                     
-                    if (window.getComputedStyle(el).display.includes('flex') || window.getComputedStyle(el).display.includes('grid')) {
-                        el.className = el.className.replace(new RegExp('\\b' + escP + '(justify-start|justify-center|justify-end)\\b', 'g'), '').trim();
+                    let displayStyle = window.getComputedStyle(el).display;
+                    if (displayStyle.includes('flex') || displayStyle.includes('grid')) {
                         if(event.data.boxAlign === 'center') el.classList.add(p+'justify-center');
                         if(event.data.boxAlign === 'right') el.classList.add(p+'justify-end');
                         if(event.data.boxAlign === 'left') el.classList.add(p+'justify-start');
@@ -403,23 +415,22 @@ const SCRIPT_PREVIEW = `<script id="editor-magic-script">
                 }
 
                 if(event.data.animationClass !== undefined) {
-                    const animClasses = ['animate-pulse', 'animate-bounce', 'hover:scale-105', 'hover:-translate-y-2', 'hover:-translate-y-1', 'hover:shadow-2xl', 'hover:shadow-indigo-500/50', 'hover:rotate-3', 'transition-transform', 'transition-all', 'transition-shadow', 'duration-300'];
-                    el.classList.remove(...animClasses);
+                    safeRemove(['animate-pulse','animate-bounce','hover:scale-105','hover:-translate-y-2','hover:-translate-y-1','hover:shadow-2xl','hover:shadow-indigo-500/50','hover:rotate-3','transition-transform','transition-all','transition-shadow','duration-300']);
                     if(event.data.animationClass) event.data.animationClass.split(' ').forEach(cls => el.classList.add(cls));
                 }
 
                 if(event.data.imgFormat !== undefined) {
+                    safeRemove(['h-full','h-screen','h-auto','object-cover','w-full','aspect-video','aspect-square','aspect-[3/4]']);
                     if (event.data.imgFormat === '') {
-                        el.style.aspectRatio = ''; el.style.height = ''; el.classList.remove('object-cover', 'w-full', 'h-auto');
+                        el.style.aspectRatio = ''; el.style.height = ''; 
                     } else {
-                        el.className = el.className.replace(/\\bh-(full|screen|auto|min|max|fit|px|\\d+|\\[.*?\\])\\b/g, '').trim();
-                        el.style.aspectRatio = event.data.imgFormat; el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
+                        el.style.aspectRatio = event.data.imgFormat.replace('aspect-','').replace('[','').replace(']',''); 
+                        el.style.height = 'auto'; el.classList.add('object-cover', 'w-full');
                     }
                 }
                 
                 if(event.data.imgRounded !== undefined) {
-                    const allClassesToRemove = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'shadow-none', 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'border-2', 'border-4', 'border-8', 'border-white', 'border-indigo-500', 'border-emerald-500', 'shadow-indigo-500/50', 'shadow-emerald-500/50', 'shadow-rose-500/50'];
-                    el.classList.remove(...allClassesToRemove);
+                    safeRemove(['rounded-none','rounded-sm','rounded-md','rounded-lg','rounded-xl','rounded-2xl','rounded-full','shadow-none','shadow-sm','shadow-md','shadow-lg','shadow-xl','shadow-2xl','border-2','border-4','border-8','border-white','border-indigo-500','border-emerald-500','shadow-indigo-500/50','shadow-emerald-500/50','shadow-rose-500/50']);
                     if (event.data.imgRounded) { event.data.imgRounded.split(' ').forEach(cls => { if (cls) el.classList.add(cls); }); }
                 }
 
@@ -511,9 +522,10 @@ export default function Home() {
   const [statusApis, setStatusApis] = useState<{ texto: string; processing: boolean }>({ texto: 'Aguardando Operação', processing: false });
   const [modalImportarCodigo, setModalImportarCodigo] = useState(false);
   const [codigoExterno, setCodigoExterno] = useState('');
+  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [fontFamily, setFontFamily] = useState('sans-serif');
   const [modalSEO, setModalSEO] = useState(false);
-  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Slides da apresentação', headScripts: '', bodyScripts: '' });
+  const [seoData, setSeoData] = useState({ title: 'Apresentação Profissional', description: 'Slides gerados', headScripts: '', bodyScripts: '' });
   const [nichoEstilo, setNichoEstilo] = useState('minimalista');
   const [productContent, setProductContent] = useState('');
 
@@ -534,14 +546,7 @@ export default function Home() {
   const moldarApresentacaoHtml = (rawHtml: string) => {
       let clean = purificarHTML(rawHtml);
       
-      const printStyles = `<style>
-@media print {
-  @page { size: landscape; margin: 0; }
-  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }
-  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }
-}
-</style>`;
+      const printStyles = `<style>\n@media print {\n  @page { size: landscape; margin: 0; }\n  body, html { margin: 0; padding: 0; height: auto !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n  #presentation-wrapper { height: auto !important; width: 100% !important; overflow: visible !important; display: block !important; }\n  section, .snap-center { height: 100vh !important; max-height: 100vh !important; width: 100vw !important; page-break-after: always !important; break-after: page !important; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden !important; position: relative !important; }\n}\n</style>`;
 
       if (clean.toLowerCase().includes('<body')) {
           if (!clean.includes('@media print')) {
@@ -614,7 +619,7 @@ export default function Home() {
   const atualizarElemento = (field: string, value: string | number | boolean, forceTextUpdate = false) => {
       if(!elementoSelecionado) return;
       const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
-      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate, device: 'desktop' }, '*');
+      iframe.contentWindow?.postMessage({ type: 'UPDATE_ELEMENT', id: elementoSelecionado.id, [field]: value, forceTextUpdate, device: deviceView }, '*');
       setElementoSelecionado((prev: any) => ({...prev, [field]: value}));
   };
 
@@ -719,7 +724,6 @@ export default function Home() {
   const injetarCodigoExterno = () => {
     if(!codigoExterno.trim()) return;
     let htmlFinal = moldarApresentacaoHtml(codigoExterno);
-
     const codEl = document.getElementById('codigoGerado') as HTMLTextAreaElement;
     const prevEl = document.getElementById('previewFrame') as HTMLIFrameElement;
     if (codEl) { setHistoricoCodigo(prev => [...prev, codEl.value]); codEl.value = htmlFinal; }
@@ -1153,15 +1157,18 @@ export default function Home() {
           </div>
       )}
 
-      {/* PAINEL LATERAL ESQUERDO */}
-      <div className="w-[360px] bg-white border-r border-slate-200 flex flex-col h-full z-10 flex-shrink-0 shadow-sm">
+      {/* ========================================== */}
+      {/* PAINEL LATERAL ESQUERDO (FIXO, 360px)      */}
+      {/* ========================================== */}
+      <aside className="w-[360px] bg-white border-r border-slate-200 flex flex-col h-full z-20 flex-shrink-0 shadow-sm">
           
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mr-2.5 text-white shadow-md shadow-indigo-200"><i className="fas fa-presentation text-xs"></i></div>
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center mr-2.5 text-white shadow-md shadow-indigo-200">
+                      <i className="fas fa-presentation text-xs"></i>
+                  </div>
                   Slide<span className="text-indigo-600">Pro</span>
               </h1>
-              
               <button onClick={toggleInspetor} className={'flex items-center gap-2 px-3.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ' + (modoInspetor ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100')}>
                   <i className={'fas fa-crosshairs ' + (modoInspetor ? 'animate-pulse text-yellow-300' : '')}></i> {modoInspetor ? 'Editando...' : 'Editar Slide'}
               </button>
@@ -1212,6 +1219,7 @@ export default function Home() {
                                   <div className="flex gap-2 mb-3">
                                       <button onClick={() => adicionarNovoElemento('text')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-font mr-1"></i> Texto</button>
                                       <button onClick={() => adicionarNovoElemento('image')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-image mr-1"></i> Imagem</button>
+                                      <button onClick={() => adicionarNovoElemento('button')} className="flex-1 bg-white border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-600 text-[10px] font-bold py-1.5 rounded transition shadow-sm"><i className="fas fa-link mr-1"></i> Botão</button>
                                   </div>
                                   
                                   <div className="flex gap-2 border-t border-slate-200 pt-3">
@@ -1221,7 +1229,6 @@ export default function Home() {
                                   </div>
                               </div>
 
-                              {/* PAINEL GLOBAL DE LINKS E ORDENAMENTO SIMPLES */}
                               <div className="p-4 mx-4 mt-4 bg-emerald-50 rounded-xl border border-emerald-200 shadow-sm">
                                   <label className="text-[11px] font-black text-emerald-800 uppercase mb-2 flex items-center"><i className="fas fa-link mr-2 text-emerald-600"></i> Link de Destino</label>
                                   <input type="text" placeholder="Cole o link (Deixe vazio para remover)" value={elementoSelecionado.href || ''} onChange={(e) => atualizarElemento('href', e.target.value)} className="input-standard border-emerald-300 focus:border-emerald-600 font-medium" />
@@ -1620,7 +1627,73 @@ export default function Home() {
                   </div>
               )}
           </div>
-      </div>
+      </aside>
+
+      {/* ========================================== */}
+      {/* PAINEL DIREITO (TRABALHO E VISUALIZADOR)   */}
+      {/* ========================================== */}
+      <main className="flex-grow flex flex-col bg-slate-200 relative min-w-0 z-10">
+          
+          <div className="bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6 h-[60px] shadow-sm z-20 flex-shrink-0">
+              <div className="flex items-center gap-3 md:gap-5">
+                  <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <button id="tabPreview" onClick={() => (window as any).mudarSeparador('preview')} className="px-5 py-2 rounded-md font-bold text-[11px] bg-white text-indigo-700 shadow-sm transition">Ver Slides</button>
+                      <button id="tabCode" onClick={() => (window as any).mudarSeparador('code')} className="px-5 py-2 rounded-md font-bold text-[11px] text-slate-500 hover:text-slate-800 transition">Código Fonte</button>
+                  </div>
+
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  <button onClick={() => setModalImportarCodigo(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-file-import"></i> Importar HTML
+                  </button>
+                  <button onClick={() => setModalSEO(true)} className="hidden lg:flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 text-[11px] font-bold transition px-3 py-1.5 rounded hover:bg-slate-100 border border-transparent hover:border-slate-200 shadow-none hover:shadow-sm">
+                      <i className="fas fa-cog"></i> Ajustes
+                  </button>
+                  
+                  <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                  <button onClick={desfazerCodigo} className="hidden lg:flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-[11px] font-bold transition px-2 py-1 rounded hover:bg-slate-100"><i className="fas fa-undo"></i> Desfazer</button>
+              </div>
+
+              <div className="flex items-center gap-3 md:gap-4">
+                  <button onClick={carregarMeusSites} className="text-slate-600 hover:text-indigo-600 font-bold text-[11px] px-3 py-2 rounded hover:bg-slate-100 transition"><i className="fas fa-presentation mr-1.5"></i> Minhas Apresentações</button>
+                  <div className="w-px h-6 bg-slate-200 hidden md:block"></div>
+                  
+                  <div className="flex bg-slate-50 rounded-lg border border-slate-200 mr-1 hidden xl:flex">
+                      <button onClick={() => (window as any).baixarPDF()} className="text-slate-500 hover:text-red-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PDF"><i className="fas fa-file-pdf mr-1"></i> PDF</button>
+                      <button onClick={() => (window as any).baixarPPTX()} className="text-slate-500 hover:text-orange-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Exportar para PowerPoint"><i className="fas fa-file-powerpoint mr-1"></i> PPTX</button>
+                      <button onClick={() => (window as any).baixarHtmlGerado()} className="text-slate-500 hover:text-indigo-600 text-[11px] px-3 py-2 border-r border-slate-200 transition" title="Baixar Código Fonte Original"><i className="fas fa-code"></i></button>
+                  </div>
+                  
+                  {siteEditando ? (
+                      <div className="flex gap-2">
+                          <button onClick={() => setSiteEditando(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg transition border border-slate-200">Cancelar</button>
+                          <button onClick={() => (window as any).handlePublicarSite()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-lg transition shadow-md flex items-center"><i className="fas fa-cloud-upload-alt mr-1.5"></i> Salvar Edição</button>
+                      </div>
+                  ) : (
+                      <button onClick={() => (window as any).handlePublicarSite()} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide rounded-lg shadow-md shadow-indigo-200 transition hover:-translate-y-0.5 flex items-center"><i className="fas fa-link mr-1.5"></i> Gerar Link</button>
+                  )}
+              </div>
+          </div>
+          
+          <div className="flex-grow relative bg-slate-200 p-0 md:p-6 lg:p-8 overflow-hidden flex justify-center items-center custom-scrollbar z-0">
+              
+              <div className="aspect-video w-full max-w-[1280px] h-full max-h-[720px] mx-auto shadow-2xl relative flex flex-col overflow-hidden transition-all duration-500 bg-white border border-slate-300">
+                  <iframe id="previewFrame" className="w-full flex-1 border-none active bg-slate-900" sandbox="allow-scripts allow-same-origin allow-modals" title="Navegador do Site"></iframe>
+                  <div id="codigoContainer" className="w-full h-full bg-[#0d1117] relative">
+                      <textarea id="codigoGerado" className="absolute inset-0 w-full h-full font-mono text-[13px] bg-[#0d1117] text-[#56d364] border-none outline-none resize-none custom-scrollbar p-8 leading-relaxed"
+                          onBlur={(e) => {
+                              const newHtml = e.target.value;
+                              const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
+                              if (iframe) { iframe.srcdoc = newHtml + SCRIPT_PREVIEW; }
+                              setHistoricoCodigo(prev => {
+                                  if (prev.length > 0 && prev[prev.length - 1] === newHtml) return prev;
+                                  return [...prev, newHtml];
+                              });
+                          }}
+                      ></textarea>
+                  </div>
+              </div>
+          </div>
+      </main>
     </div>
   );
 }
