@@ -889,24 +889,22 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
-    setModalMeusSitesAberto(true); // 1. Abre a janela imediatamente para você ver feedback
+    setModalMeusSitesAberto(true);
     setCarregandoSites(true);
-    
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { 
-        setCarregandoSites(false);
-        return; 
-    }
+    if (!session) { setCarregandoSites(false); return; }
     
+    // Busca na tabela sem tentar ordenar por uma coluna que não existe
     const { data, error } = await supabase
         .from('apresentacoes_salvas')
         .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', session.user.id);
         
     if (!error) { 
         setListaSites(data || []); 
         setPaginaAtual(1); 
+    } else {
+        alert("Erro ao carregar: " + error.message);
     }
     setCarregandoSites(false);
   };
