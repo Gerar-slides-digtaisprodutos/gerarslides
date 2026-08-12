@@ -889,18 +889,12 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
-    // Força a abertura do modal sem esperar nada do banco primeiro
-    setModalMeusSitesAberto(true);
-    
-    // Debug: Verifica se o estado mudou
-    console.log("Modal aberto!");
-    
+    setModalMeusSitesAberto(true); // Abre a janela imediatamente na tela
     setCarregandoSites(true);
-    const { data: { session } } = await supabase.auth.getSession();
     
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session) { 
-        alert("Sua sessão do Supabase expirou.");
-        setCarregandoSites(false);
+        setCarregandoSites(false); 
         return; 
     }
     
@@ -909,10 +903,9 @@ export default function Home() {
         .select('*')
         .eq('user_id', session.user.id);
         
-    if (error) { 
-        alert("Erro no Banco: " + error.message); 
-    } else { 
+    if (!error) { 
         setListaSites(data || []); 
+        setPaginaAtual(1); 
     }
     setCarregandoSites(false);
   };
@@ -1748,6 +1741,44 @@ export default function Home() {
               </div>
           </div>
       </main>
+      {modalMeusSitesAberto && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+              <h2 className="text-xl font-black text-slate-800 flex items-center"><i className="fas fa-server text-indigo-500 mr-2.5"></i> Apresentações Salvas</h2>
+              <button onClick={() => setModalMeusSitesAberto(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition font-bold"><i className="fas fa-times"></i></button>
+            </div>
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
+              {carregandoSites ? (
+                <div className="text-center py-16"><i className="fas fa-circle-notch fa-spin text-4xl text-indigo-500 mb-4"></i><p className="text-sm font-bold text-slate-500">Buscando apresentações...</p></div>
+              ) : listaSites.length === 0 ? (
+                <div className="text-center py-20"><i className="fas fa-folder-open text-6xl text-slate-300 mb-4"></i><p className="text-lg font-bold text-slate-600">Você ainda não tem nenhuma apresentação salva.</p></div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {listaSites.map((site) => {
+                    const linkUrl = window.location.origin + '/' + site.slug;
+                    return (
+                      <div key={site.id} className="border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all bg-white flex flex-col group">
+                        <h3 className="font-black text-base text-slate-800 mb-3 truncate">{site.titulo}</h3>
+                        <div className="flex bg-slate-50 border border-slate-200 rounded-lg text-xs overflow-hidden mb-5">
+                            <span className="bg-slate-100 text-slate-500 px-3 py-2 border-r border-slate-200 flex items-center"><i className="fas fa-link"></i></span>
+                            <input type="text" readOnly value={linkUrl} className="bg-transparent w-full p-2 outline-none font-mono text-slate-600" />
+                        </div>
+                        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100">
+                          <a href={'/' + site.slug} target="_blank" rel="noreferrer" className="text-xs font-bold uppercase text-indigo-600 hover:text-indigo-800 transition flex items-center"><i className="fas fa-external-link-alt mr-1.5"></i> Abrir Link</a>
+                          <div className="flex gap-2">
+                            <button onClick={() => editarSite(site)} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition shadow-sm"><i className="fas fa-pen mr-1"></i> Editar</button>
+<button onClick={() => deletarSite(site.id, site.slug)} className="px-4 py-2 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg transition"><i className="fas fa-trash"></i></button>                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
