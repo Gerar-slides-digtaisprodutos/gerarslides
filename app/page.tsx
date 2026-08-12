@@ -889,25 +889,22 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
-    setModalMeusSitesAberto(true); // 1. Abre a janela na hora para dar feedback
+    setModalMeusSitesAberto(true); // 1. Abre a janela imediatamente para você ver feedback
     setCarregandoSites(true);
     
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { 
-        alert("Sua sessão expirou ou você não está logado.");
         setCarregandoSites(false);
         return; 
     }
     
-    // IMPORTANTE: Se o seu banco de dados usar o nome antigo, troque 'apresentacoes_salvas' por 'sites_salvos'
-    const { data, error } = await supabase.from('apresentacoes_salvas')
+    const { data, error } = await supabase
+        .from('apresentacoes_salvas')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
         
-    if (error) { 
-        alert("Erro no Supabase: " + error.message); 
-    } else { 
+    if (!error) { 
         setListaSites(data || []); 
         setPaginaAtual(1); 
     }
