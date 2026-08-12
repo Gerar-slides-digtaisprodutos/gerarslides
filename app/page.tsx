@@ -738,7 +738,10 @@ export default function Home() {
       const comando = comandoOverride || promptInput?.value.trim();
       if(!comando || !elementoSelecionado) { (window as any).showNotification("Informe a instrução de otimização.", "error"); return; }
       const systemInstruction = 'Atue como Especialista de Apresentações (Slides). Você receberá o HTML de UM elemento do slide. Aplique a seguinte modificação: "' + comando + '". REGRA MÁXIMA: DEVOLVA APENAS A TAG HTML FINAL E PRONTA PARA USO. Preserve obrigatoriamente o ID original id="' + elementoSelecionado.id + '".';
-      const resData = await chamarMotorIA(systemInstruction, [{text: 'CÓDIGO ORIGINAL:\n' + elementoSelecionado.outerHTML}], true);
+      
+      // AQUI: Adicionado o textEngine === 'grok' no quarto parâmetro
+      const resData = await chamarMotorIA(systemInstruction, [{text: 'CÓDIGO ORIGINAL:\n' + elementoSelecionado.outerHTML}], true, textEngine === 'grok');
+      
       if(resData && resData.html) {
           const cleanHtml = resData.html.replace(/```html/gi, '').replace(/```/g, '').trim();
           const iframe = document.getElementById('previewFrame') as HTMLIFrameElement;
@@ -759,7 +762,12 @@ export default function Home() {
     try {
         const response = await fetch('/api/gerar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], isSiteRefinement: true, useGrok: false })
+            body: JSON.stringify({ 
+                systemInstruction: "Engenheiro Sênior de Apresentações em HTML. Modifique os slides conforme solicitado mantendo o formato snap-scroll.", 
+                promptParts: [{ text: 'COMANDO DO USUÁRIO:\n' + comando + '\n\n=== CÓDIGO HTML DOS SLIDES ATUAIS ===\n' + currentHtml }], 
+                isSiteRefinement: true, 
+                useGrok: textEngine === 'grok' // AQUI ESTAVA HARDCODED COMO FALSE! AGORA OBEDECE O MENU.
+            })
         });
         const responseText = await response.text();
         let data;
