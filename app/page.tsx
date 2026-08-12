@@ -889,22 +889,27 @@ export default function Home() {
   };
 
   const carregarMeusSites = async () => {
+    alert("Botão clicado com sucesso!"); // Se aparecer este alerta, o clique está funcionando perfeitamente!
     setModalMeusSitesAberto(true);
     setCarregandoSites(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setCarregandoSites(false); return; }
     
-    // Busca na tabela sem tentar ordenar por uma coluna que não existe
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { 
+        alert("Sua sessão do Supabase expirou. Faça login novamente.");
+        setCarregandoSites(false);
+        return; 
+    }
+    
     const { data, error } = await supabase
         .from('apresentacoes_salvas')
         .select('*')
         .eq('user_id', session.user.id);
         
-    if (!error) { 
+    if (error) { 
+        alert("Erro no Banco: " + error.message); 
+    } else { 
         setListaSites(data || []); 
         setPaginaAtual(1); 
-    } else {
-        alert("Erro ao carregar: " + error.message);
     }
     setCarregandoSites(false);
   };
