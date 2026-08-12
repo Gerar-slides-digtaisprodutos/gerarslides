@@ -72,7 +72,7 @@ ${regraImagens}
                     { role: "system", content: systemInstructionFinal }, 
                     { role: "user", content: textoDoPrompt || "Gere a apresentação de slides conforme instruído." }
                 ], 
-                response_format: { type: "json_object" }, 
+                
                 temperature: 0.7 
             })
         });
